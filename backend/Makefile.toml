@@ -1,0 +1,12 @@
+[tasks.run-backend-nix]
+condition.env_true = ["IN_NIX_SHELL"]
+command = "wrangler"
+args = ["dev"]
+
+[tasks.run-backend-npx]
+condition.env_false = ["IN_NIX_SHELL"]
+command = "npx"
+args = ["wrangler", "dev"]
+
+[tasks.run-backend]
+dependencies = ["run-backend-nix", "run-backend-npx"]

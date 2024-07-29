@@ -1,0 +1,32 @@
+:root {
+	/* Colors */
+	--primary-color: 249, 104, 23;
+	--secondary-color: 226, 206, 169;
+	--text-body-color: 255, 245, 245;
+
+	--primary: rgb(var(--primary-color));
+	--secondary: rgb(var(--secondary-color));
+	--text-body: rgb(var(--text-body-color));
+
+	--title: var(--primary);
+
+	/* Fonts */
+	--fonts-body: sans-serif;
+	--fonts-heading: 'AlfaSlabOne', sans-serif;
+
+	/* Decorations */
+	--dec-shadow: 4px 4px 0px #000;
+	--dec-shadow-filter: drop-shadow(var(--dec-shadow));
+}
+
+/* Reset */
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+html {
+	background: rgba(19, 19, 19, 0.9);
+	color: var(--text-body);
+}
