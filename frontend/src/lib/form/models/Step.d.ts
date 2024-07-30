@@ -10,19 +10,19 @@ export type FormStep =
 
 export type FormStepText = CreateStep<"text", {
   title: string,
-  description: string,
+  description?: string,
 }>;
 
 export type FormStepQuestionText = CreateStep<"questionText", {
-  question: string,
-  description: string,
+  title: string,
+  description?: string,
 
   required: boolean
 }>;
 
 export type FormStepOptions = CreateStep<"options", {
-  question: string,
-  description: string,
+  title: string,
+  description?: string,
 
   options: Array<string>,
 

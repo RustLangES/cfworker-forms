@@ -31,13 +31,13 @@ export function slide(
     distance = 20,
   }: SlideParams,
 ): [(node: Element) => TransitionConfig, (node: Element) => TransitionConfig] {
-  const getOffset = (node: Element, isInner: boolean): TransitionConfig => {
+  const getOffset = (node: Element, isOut: boolean): TransitionConfig => {
     const style = getComputedStyle(node);
     const opacity = +style.opacity;
     const transform = style.transform.slice(0, -1);
 
     const translate = "translate" + (axis === SlideAxis.X ? "X" : "Y");
-    const dir = direction === SlideDirection.Forward ? 1 : -1;
+    const dir = direction === SlideDirection.Forward ? -1 : 1;
 
     const offsetXY = transform.slice(
       transform.lastIndexOf(",", transform.lastIndexOf(",") - 1) + 1,
@@ -50,12 +50,11 @@ export function slide(
       duration,
       easing,
       css: (t, u) => {
-        const offs = u * (isInner ? -distance : distance) 
-          ;
+        const offs = u * (isOut ? -distance : distance) * dir;
 
-        const offs_s = offs < 0 ? " - " + -offs.toFixed(2) : " + " + offs.toFixed(2);
-
-        console.log(offs_s)
+        const offs_s = offs < 0
+          ? " - " + -offs.toFixed(2)
+          : " + " + offs.toFixed(2);
 
         return `opacity: ${t * opacity};` +
           `transform: ${translate}(calc(${offset}px ${offs_s}px));`;

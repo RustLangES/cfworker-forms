@@ -14,8 +14,8 @@ export function load(): Form {
       {
         type: "questionText",
         data: {
-          question: "Question Text",
-          description: "Hello World!",
+          title: "Question Text",
+          description: "Hello World!\nHello World!\nHello World!\nHello Worldalssdkljhasdlkjh asdlkjhasdlk jhasdkljhasdkjhaskdjhd!\n",
 
           required: true
         }
@@ -23,7 +23,7 @@ export function load(): Form {
       {
         type: "options",
         data: {
-          question: "Options",
+          title: "Options",
           description: "Hello World!",
 
           required: false,
@@ -39,7 +39,7 @@ export function load(): Form {
       {
         type: "options",
         data: {
-          question: "Options (Multiple)",
+          title: "Options (Multiple)",
           description: "Hello World!",
 
           required: false,

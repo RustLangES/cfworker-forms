@@ -7,6 +7,8 @@
 
 	import FormStepText from "./steps/FormStepText.svelte";
 	import FormStepQuestionText from './steps/FormStepQuestionText.svelte';
+	import FormStepOptions from "./steps/FormStepOptions.svelte";
+	import FormStepOptionsMultiple from "./steps/FormStepOptionsMultiple.svelte";
 
   export let step: FormStep;
   export let active: boolean;
@@ -25,13 +27,22 @@
 </script>
 
 {#if active}
-  <div in:slidein out:slideout>
+  <main in:slidein out:slideout>
+
+    <h1> {step.data.title} </h1>
+
+    {#if step.data.description}
+      <p> {step.data.description} </p>
+    {/if}
+
     {#if step.type === "text"}
       <FormStepText step={step} />
     {:else if step.type === "questionText"}
       <FormStepQuestionText step={step} />
-    {:else if step.type === "options"}
-      <FormStepText step={step} />
+    {:else if step.type === "options" && !step.data.canMultiple}
+      <FormStepOptions step={step} />
+    {:else if step.type === "options" && step.data.canMultiple}
+      <FormStepOptionsMultiple step={step} />
     {:else}
       {@debug step}
     {/if}
@@ -39,11 +50,11 @@
     <button on:click={() => dispatch("next")}>
       Next
     </button>
-  </div>
+  </main>
 {/if}
 
 <style>
-  div {
+  main {
     position: fixed;
     top: 50vh;
     right: 40vw;
@@ -61,6 +72,13 @@
     gap: 1rem;
   }
 
+  @media (max-width: 470px) {
+    main {
+      right: 1rem;
+      width: calc(100vw - 2rem);
+    }
+  }
+
   button {
     margin-top: 0.5rem;
     padding: 0.3rem 1rem;
@@ -75,6 +93,16 @@
   }
 
   button:hover {
-    filter: drop-shadow(0px 0px)
+    filter: drop-shadow(0px 0px 0px #000)
+  }
+
+  @media (max-width: 470px) {
+    main {
+      align-items: center;
+    }
+
+    button {
+      min-width: 10rem;
+    }
   }
 </style>
