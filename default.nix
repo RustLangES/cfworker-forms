@@ -57,7 +57,9 @@ in
 
   # `nix develop`
   devShells.default = craneLib.devShell {
-    buildInputs = nativeBuildInputs ++ buildInputs;
+    buildInputs = nativeBuildInputs ++ buildInputs ++ [
+        pkgs.nodePackages.pnpm
+    ];
     # pkgs.nodePackages.wrangler
   };
 }
