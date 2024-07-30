@@ -1,0 +1,3 @@
+[tasks.build-frontend]
+command = "npm"
+args = ["run", "build"]

@@ -6,10 +6,13 @@ skip_crate_env_info = true
 
 [env]
 CARGO_MAKE_WORKSPACE_EMULATION = true
-CARGO_MAKE_CRATE_WORKSPACE_MEMBERS = ["./backend"]
+CARGO_MAKE_CRATE_WORKSPACE_MEMBERS = ["./backend", "./frontend"]
 
 [tasks.default]
 alias = "dev"
+
+[tasks.build]
+dependencies = ["build-frontend"]
 
 [tasks.dev]
 dependencies = ["run-backend"]
