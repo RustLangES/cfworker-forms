@@ -61,23 +61,14 @@ jobs:
             | :--- | :----- | :------ |
             | ${{env.BRANCH_NAME}}     |  🔨 Building ([Logs](${{env.ACTION_RUN}}))  | waiting... |
 
-      # Build Rust Page
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: nightly-2024-02-12
-          target: wasm32-unknown-unknown
-
-      - uses: Swatinem/rust-cache@v2
-      - uses: davidB/rust-cargo-make@v1
       - uses: pnpm/action-setup@v4
+        with:
+          version: 9
 
-      - name: Pre Build
-        run: |
-          pnpm i
       - name: Build
         # env:
         #   COLLABORATORS_API_TOKEN: ${{ secrets.COLLABORATORS_API_TOKEN }}
-        run: npm run build
+        run: pnpm run build
 
       - name: Deploy
         id: deploy
