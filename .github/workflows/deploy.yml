@@ -8,7 +8,8 @@ on:
     paths:
       - ".github/workflows/deploy.yml"
       - "wrangler.toml"
-      - "src/**/**.rs"
+      - "frontend/"
+      - "backend/"
       - "Cargo.toml"
       - "Cargo.lock"
       - "rust-toolchain.toml"
@@ -28,6 +29,11 @@ jobs:
   deploy:
     needs: [check]
     runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        path:
+          - backend
+          - frontend
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -44,6 +50,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: "${{ matrix.path }}"
           # secrets: |
           #   YOUR_SECRET
           #   YOUR_OTHER_SECRET
