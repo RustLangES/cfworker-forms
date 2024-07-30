@@ -76,6 +76,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "3.67.0"
           command: pages deploy ./frontend/dist --project-name=forms-page --branch="${{ env.BRANCH_NAME }}"
 
       - name: Extract hash from CF url Deploy

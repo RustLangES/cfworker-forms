@@ -1,4 +1,4 @@
-name = "forms-api"
+name = "forms-page"
 workers_dev = true
 main = "./dist/cloudflare/worker.js"
 site.bucket = "./dist/cloudflare/public"

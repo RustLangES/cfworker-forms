@@ -54,6 +54,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: "${{ matrix.path }}"
+          wranglerVersion: "3.67.0"
           # secrets: |
           #   YOUR_SECRET
           #   YOUR_OTHER_SECRET
