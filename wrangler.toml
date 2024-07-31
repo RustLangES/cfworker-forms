@@ -7,4 +7,4 @@ binding = "DB" # i.e. available in your Worker on env.DB
 database_name = "forms"
 
 # Change to your test database
-database_id = "d9378a34-9fe6-4232-9b8f-3322287d4cd0"
+database_id = "c9559373-04d1-4021-b25e-ab067b00e4ce"
