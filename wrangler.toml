@@ -2,8 +2,9 @@ name = "forms"
 workers_dev = true
 compatibility_date = "2024-03-14"
 
-# [[d1_databases]]
-# binding = "DB"
-# database_name = "mail-subscriptions"
-# # Replace this if is needed
-# database_id = "e75396da-6153-4389-b66b-bbee37496832"
+[[d1_databases]]
+binding = "DB" # i.e. available in your Worker on env.DB
+database_name = "forms"
+
+# Change to your test database
+database_id = "d9378a34-9fe6-4232-9b8f-3322287d4cd0"
