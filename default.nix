@@ -5,7 +5,6 @@
   stdenv ? pkgs.stdenv,
   crane,
   fenix,
-  flake-utils,
   ...
 }: let
   # fenix: rustup replacement for reproducible builds
@@ -61,16 +60,17 @@ in
       nativeBuildInputs
       ++ buildInputs
       ++ (with pkgs; [
-          cargo-make
-          taplo
+        cargo-make
+        taplo
 
-          deno
-          nodejs
-          nodePackages.pnpm
-          nodePackages.prettier
-          nodePackages.typescript-language-server
-          nodePackages.svelte-language-server
-          nodePackages.wrangler
-        ]);
+        deno
+        nodejs
+        nodePackages.pnpm
+        nodePackages.prettier
+        nodePackages.typescript-language-server
+        nodePackages.svelte-language-server
+        nodePackages.wrangler
+      ]);
+    LD_LIBRARY_PATH = "${stdenv.cc.cc.lib}/lib";
   };
 }
