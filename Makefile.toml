@@ -15,4 +15,27 @@ alias = "dev"
 dependencies = ["build-frontend"]
 
 [tasks.dev]
-dependencies = ["run-backend"]
+dependencies = ["run-backend", "run-frontend"]
+
+[tasks.init]
+dependencies = ["init-nix", "init-npx"]
+
+[tasks.init-nix]
+condition.env_true = ["IN_NIX_SHELL"]
+script.pre = "wrangler d1 create forms"
+script.main = "wrangler d1 apply forms"
+script.post = "echo 'Your Database has created with name: forms'"
+
+[tasks.init-npx]
+condition.env_false = ["IN_NIX_SHELL"]
+script.pre = "npx wrangler d1 create forms"
+script.main = "npx wrangler d1 migrations apply forms"
+script.post = "echo 'Your Database has created with name: forms'"
+
+[tasks.migration-new]
+command = "wrangler"
+args = ["d1", "migrations", "create", "mail-subscriptions"]
+
+[tasks.migration-apply]
+command = "wrangler"
+args = ["d1", "migrations", "apply", "mail-subscriptions"]

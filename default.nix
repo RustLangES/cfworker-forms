@@ -57,9 +57,20 @@ in
 
   # `nix develop`
   devShells.default = craneLib.devShell {
-    buildInputs = nativeBuildInputs ++ buildInputs ++ [
-        pkgs.nodePackages.pnpm
-    ];
-    # pkgs.nodePackages.wrangler
+    buildInputs = 
+      nativeBuildInputs
+      ++ buildInputs
+      ++ (with pkgs; [
+          cargo-make
+          taplo
+
+          deno
+          nodejs
+          nodePackages.pnpm
+          nodePackages.prettier
+          nodePackages.typescript-language-server
+          nodePackages.svelte-language-server
+          nodePackages.wrangler
+        ]);
   };
 }

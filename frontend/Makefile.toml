@@ -1,3 +1,7 @@
 [tasks.build-frontend]
 command = "npm"
 args = ["run", "build"]
+
+[tasks.run-frontend]
+command = "pnpm"
+args = ["dev"]
