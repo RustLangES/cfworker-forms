@@ -94,7 +94,8 @@
         "crane": "crane",
         "fenix": "fenix",
         "flake-utils": "flake-utils",
-        "nixpkgs": "nixpkgs_2"
+        "nixpkgs": "nixpkgs_2",
+        "workerd": "workerd"
       }
     },
     "rust-analyzer-src": {
@@ -126,6 +127,26 @@
       "original": {
         "owner": "nix-systems",
         "repo": "default",
+        "type": "github"
+      }
+    },
+    "workerd": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1722243183,
+        "narHash": "sha256-rpUVIH67ogStcLi3ei3Wh78KDQxSpv2qaYAo9yRUm8Q=",
+        "owner": "getchoo",
+        "repo": "workerd-docker",
+        "rev": "e0fa274f4fb4dbac9c2b451ac33f830752f9e63f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "getchoo",
+        "repo": "workerd-docker",
         "type": "github"
       }
     }

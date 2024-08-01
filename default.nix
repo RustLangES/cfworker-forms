@@ -5,6 +5,7 @@
   stdenv ? pkgs.stdenv,
   crane,
   fenix,
+  workerd,
   ...
 }: let
   # fenix: rustup replacement for reproducible builds
@@ -63,6 +64,8 @@ in
         cargo-make
         taplo
 
+        workerd
+
         deno
         nodejs
         nodePackages.pnpm
@@ -71,6 +74,7 @@ in
         nodePackages.svelte-language-server
         nodePackages.wrangler
       ]);
-    LD_LIBRARY_PATH = "${stdenv.cc.cc.lib}/lib";
+
+    MINIFLARE_WORKERD_PATH="${workerd}/bin/workerd";
   };
 }

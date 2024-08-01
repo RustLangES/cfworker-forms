@@ -7,6 +7,11 @@
       url = "github:ipetkov/crane";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    workerd = {
+      url = "github:getchoo/workerd-docker";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = {
@@ -23,6 +28,7 @@
           pkgs = nixpkgs.legacyPackages.${system};
           crane = inputs.crane.lib;
           fenix = inputs.fenix.packages;
+          workerd = inputs.workerd.packages.${system}.workerd;
         };
       in {
         inherit (bundle) packages apps devShells;
