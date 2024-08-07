@@ -13,4 +13,12 @@ fallthrough = false
 
 # Docs: https://developers.cloudflare.com/workers/configuration/environment-variables/
 [env.local.vars]
+HOST = "http://localhost:8787"
 
+[[d1_databases]]
+binding = "DB" # i.e. available in your Worker on env.DB
+database_name = "forms"
+migrations_dir = "../../migrations/"
+
+# Change to your test database
+database_id = "d9378a34-9fe6-4232-9b8f-3322287d4cd0"

@@ -1,0 +1,15 @@
+[package]
+name = "forms-models"
+version = "0.1.0"
+edition.workspace = true
+description.workspace = true
+repository.workspace = true
+
+[dependencies]
+forms-shared = { path = "../shared/" }
+
+time.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+serde-wasm-bindgen.workspace = true
+worker.workspace = true

@@ -1,0 +1,31 @@
+[package]
+name = "forms-backend"
+version = "0.1.0"
+edition.workspace = true
+description.workspace = true
+repository.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+forms-models = { path = "../models/" }
+forms-shared = { path = "../shared/" }
+
+# oauth2.workspace = true
+# reqwest.workspace = true
+reqwest = { version = "0.12.4", default-features = false, features = ["json"] }
+
+serde.workspace = true
+serde-wasm-bindgen.workspace = true
+serde_json.workspace = true
+
+time.workspace = true
+uuid.workspace = true
+worker.workspace = true
+
+[profile.release]
+opt-level = "s"
+lto = true
+strip = true
+codegen-units = 1
