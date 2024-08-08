@@ -1,3 +1,6 @@
+use std::convert::Infallible;
+use std::{future, iter};
+
 use oauth2::AuthorizationCode;
 use oauth2::{
     basic::BasicClient, AuthUrl, ClientId, ClientSecret, CsrfToken, EndpointNotSet, EndpointSet,
@@ -5,6 +8,7 @@ use oauth2::{
 };
 
 use forms_shared::{FormsResponse, IntoResponse, WorkerHttpResponse};
+use worker::{AbortSignal, ByteStream, Cf, Request, RequestInit};
 
 use crate::shared::error_wrapper;
 use crate::RouterContext;
@@ -56,7 +60,7 @@ pub async fn github(req: worker::Request, ctx: RouterContext) -> WorkerHttpRespo
 }
 
 pub async fn github_callback(req: worker::Request, ctx: RouterContext) -> WorkerHttpResponse {
-    error_wrapper(req, ctx, |mut req, ctx, db| async move {
+    error_wrapper(req, ctx, |req, ctx, db| async move {
         let client = get_github_client(&ctx);
 
         let Some(code) = req
@@ -75,11 +79,28 @@ pub async fn github_callback(req: worker::Request, ctx: RouterContext) -> Worker
             );
         };
 
-        let http_client = reqwest::ClientBuilder::new()
-            // Following redirects opens the client up to SSRF vulnerabilities.
-            .redirect(reqwest::redirect::Policy::none())
-            .build()
-            .expect("Client should build");
+        let http_client = |req: oauth2::http::Request<Vec<u8>>| async {
+            // let uri = "https://github.com/login/oauth/access_token";
+
+            worker::console_log!("{req:#?}");
+            let req = worker::request_to_wasm(req_oauth2_to_worker(req))?;
+            // let body = req.into_body();
+            // let body = worker::js_sys::Uint8Array::new_with_length(body.len() as u32);
+
+            // let req = Request::new_with_init(
+            //     uri,
+            //     &RequestInit::new()
+            //         .with_method(worker::Method::Post)
+            //         .with_body(Some(body.into())),
+            // );
+
+            let res = worker::Fetch::Request(req.into()).send().await?;
+            worker::console_log!("{res:#?}");
+
+            let res = worker::response_from_wasm(res.into())?;
+
+            Result::<oauth2::HttpResponse, worker::Error>::Ok(res_worker_to_oauth2(res).await)
+        };
 
         let token = client
             .exchange_code(AuthorizationCode::new(code))
@@ -87,7 +108,44 @@ pub async fn github_callback(req: worker::Request, ctx: RouterContext) -> Worker
             .await
             .map_err(|err| FormsResponse::text(500, err.to_string()).map_or_else(|a| a, |b| b))?;
 
+        println!("{token:#?}");
+
         FormsResponse::ok("OK")
     })
     .await
+}
+
+struct BodyVec8(Vec<u8>);
+
+impl futures_core::Stream for BodyVec8 {
+    type Item = Result<Vec<u8>, Infallible>;
+
+    fn poll_next(
+        self: std::pin::Pin<&mut Self>,
+        _: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Option<Self::Item>> {
+        std::task::Poll::Ready(Some(Ok(self.0.clone())))
+    }
+}
+
+fn req_oauth2_to_worker(req: oauth2::HttpRequest) -> worker::HttpRequest {
+    let (parts, body) = req.into_parts();
+
+    let body = worker::Body::from_stream(BodyVec8(body)).unwrap();
+
+    worker::HttpRequest::from_parts(parts, body)
+}
+
+async fn res_worker_to_oauth2(res: worker::HttpResponse) -> oauth2::HttpResponse {
+    let (parts, body) = res.into_parts();
+
+    let mut stream = wasm_streams::ReadableStream::from_raw(body.into_inner().unwrap());
+    let mut stream = stream.get_reader();
+    let a = vec![];
+
+    while let Ok(Some(b)) = stream.read().await {
+        worker::console_log!("{b:#?}");
+    }
+
+    oauth2::HttpResponse::from_parts(parts, a)
 }

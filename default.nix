@@ -1,6 +1,7 @@
 {
   system,
   pkgs,
+  pkgs-stable,
   lib ? pkgs.lib,
   stdenv ? pkgs.stdenv,
   crane,
@@ -64,7 +65,7 @@ in
         cargo-make
         taplo
 
-        workerd
+        # workerd
 
         deno
         nodejs
@@ -72,9 +73,9 @@ in
         nodePackages.prettier
         nodePackages.typescript-language-server
         nodePackages.svelte-language-server
-        nodePackages.wrangler
+        pkgs-stable.wrangler
       ]);
 
-    MINIFLARE_WORKERD_PATH="${workerd}/bin/workerd";
+    # MINIFLARE_WORKERD_PATH="${workerd}/bin/workerd";
   };
 }
