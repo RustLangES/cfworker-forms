@@ -12,7 +12,7 @@ type = "CompiledWasm"
 fallthrough = false
 
 # Docs: https://developers.cloudflare.com/workers/configuration/environment-variables/
-[env.local.vars]
+[vars]
 HOST = "http://localhost:8787"
 
 [[d1_databases]]

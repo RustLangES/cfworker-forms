@@ -15,6 +15,18 @@ impl FormsResponse {
     }
 
     /// Returns error if any name is invalid (eg. contains space)
+    pub fn headers(headers: &[(&str, &str)]) -> Result<worker::Headers, worker::Error> {
+        let mut h = worker::Headers::new();
+
+        for header in headers {
+            h.set(header.0, header.1)
+                .inspect_err(|err| worker::console_error!("Setting header: {err}"))?;
+        }
+
+        Ok(h)
+    }
+
+    /// Returns error if any name is invalid (eg. contains space)
     pub fn with_headers(headers: &[(&str, &str)]) -> Result<ResponseBuilder, Response> {
         let mut b = ResponseBuilder::new();
 

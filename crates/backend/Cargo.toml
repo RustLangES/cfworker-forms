@@ -23,6 +23,8 @@ time.workspace = true
 uuid.workspace = true
 wasm-streams = "0.4.0"
 worker.workspace = true
+form_urlencoded = "1.2.1"
+base64 = "0.22.1"
 
 [profile.release]
 opt-level = "s"

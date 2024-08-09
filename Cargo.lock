@@ -188,6 +188,8 @@ dependencies = [
 name = "forms-backend"
 version = "0.1.0"
 dependencies = [
+ "base64",
+ "form_urlencoded",
  "forms-models",
  "forms-shared",
  "futures-core",
