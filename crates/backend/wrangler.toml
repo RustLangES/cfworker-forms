@@ -11,10 +11,6 @@ globs = ["**/*.wasm"]
 type = "CompiledWasm"
 fallthrough = false
 
-# Docs: https://developers.cloudflare.com/workers/configuration/environment-variables/
-[vars]
-HOST = "http://localhost:8787"
-
 [[d1_databases]]
 binding = "DB" # i.e. available in your Worker on env.DB
 database_name = "forms"
