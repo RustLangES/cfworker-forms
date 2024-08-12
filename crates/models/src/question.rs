@@ -1,4 +1,4 @@
-use forms_shared::get_body;
+use forms_shared::IntoResponse;
 use serde::{Deserialize, Serialize};
 use worker::wasm_bindgen::JsValue;
 use worker::RouteContext;
@@ -135,7 +135,7 @@ impl QuestionCreate {
             description,
             r#type,
             data,
-        } = get_body(req).await?;
+        } = req.json().await.map_err(IntoResponse::into_response)?;
         let form_id: usize = route.param("form_id").unwrap().parse().unwrap();
 
         Ok(Self {
@@ -150,7 +150,7 @@ impl QuestionCreate {
 
 create_queries! {
     Question where select_all = "id, title, description, type, data, deleted",
-    QuestionRead where select = with question; [ question?.id, question?.form_id, ],
+    QuestionRead where select = with question; [ question?.id; question?.form_id; ],
     QuestionCreate where create = with question; [
         question.form_id,
         question.title,
@@ -163,17 +163,17 @@ create_queries! {
         },
     ],
     QuestionUpdate where update = with question; {
-        where = [ id = question.id ];
+        where = [ question.id; ];
         set = [
-            question.title,
-            question.description,
-            type = question.r#type,
-            data = if !question.data.is_undefined() || !question.data.is_null() {
+            &question?.title;
+            &question?.description;
+            &type ?= question.r#type;
+            &data ?= if !question.data.is_undefined() || !question.data.is_null() {
                 Some(worker::js_sys::JSON::stringify(&question.data).map(String::from).unwrap())
             } else {
                 None
-            },
+            };
         ];
     },
-    QuestionDelete where delete = with question; [ question.id, ],
+    QuestionDelete where delete = with question; [ question.id; ],
 }

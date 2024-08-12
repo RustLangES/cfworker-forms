@@ -36,9 +36,7 @@ pub async fn get_all(req: Request, ctx: RouterContext) -> Result<Response> {
 
 pub async fn post(req: Request, ctx: RouterContext) -> WorkerHttpResponse {
     error_wrapper(req, ctx, |mut req, ctx, db| async move {
-        let form_id = ctx.param("form_id").unwrap().parse().unwrap();
-
-        needs_admin(&mut req, &db, &ctx, Some(form_id)).await?;
+        needs_admin(&mut req, &db, &ctx, None).await?;
 
         let body = QuestionCreate::from_req(&mut req, &ctx).await?;
 

@@ -52,6 +52,7 @@ macro_rules! create_queries {
                     [ $($set)+ ];
                 );
 
+                ::worker::console_log!("select_query: {}", query);
                 d1.prepare(query).bind(&args).map_err(|err| format!("{err}"))
             }
         }
@@ -60,55 +61,18 @@ macro_rules! create_queries {
     };
 
     (!select ($table:expr); [$($set:tt)+];) => {{
-        let mut out_query = vec![];
-        let mut out_args = vec![];
-
-        $crate::macros::create_queries!(!select_set out_query, out_args; $($set)+);
+        let (out_query, out_args) =
+            $crate::macros::create_queries!(!new_query; $($set)+);
 
         if out_args.len() == 0 {
             return Err("No properties to select".to_owned());
         }
 
         (
-            format!(concat!("SELECT * FROM ", $table, " WHERE {}"), out_query.join(", ")),
+            format!(concat!("SELECT * FROM ", $table, " WHERE {}"), out_query.join(" AND ")),
             out_args,
         )
     }};
-
-    (!select_set $out_query:ident, $out_args:ident;) => {};
-
-    (!select_set $out_query:ident, $out_args:ident; $prop:ident ?= $val:expr, $($tail:tt)*) => {
-        if let Some($prop) = $val {
-            $out_query.push(concat!(stringify!($prop), " = ?"));
-            $out_args.push($prop.into());
-        }
-
-        $crate::macros::create_queries!(!select_set $out_query, $out_args; $($tail)*);
-    };
-
-    (!select_set $out_query:ident, $out_args:ident; $prop:ident = $val:expr, $($tail:tt)*) => {
-        $out_query.push(concat!(stringify!($prop), " = ?"));
-        $out_args.push($val.into());
-
-        $crate::macros::create_queries!(!select_set $out_query, $out_args; $($tail)*);
-    };
-
-    (!select_set $out_query:ident, $out_args:ident; $var:ident?.$prop:ident, $($tail:tt)*) => {
-        if let Some($prop) = $var.$prop {
-            $out_query.push(concat!(stringify!($prop), " = ?"));
-            $out_args.push($prop.into());
-        }
-
-        $crate::macros::create_queries!(!select_set $out_query, $out_args; $($tail)*);
-    };
-
-    (!select_set $out_query:ident, $out_args:ident; $var:ident.$prop:ident, $($tail:tt)*) => {
-        $out_query.push(concat!(stringify!($prop), " = ?"));
-        $out_args.push(($var.$prop).into());
-
-        $crate::macros::create_queries!(!select_set $out_query, $out_args; $($tail)*);
-    };
-
 
     (!queries 1 ($cty:ty, $table:expr, $READ_ALL:ty, $READ:ty); $ty:ty where create = | $self:ident, $db:ident | $body:block, $($tail:tt)*) => {
         impl $crate::shared::D1EntityCreate for $ty {
@@ -201,14 +165,14 @@ macro_rules! create_queries {
 
     (!queries 2 ($cty:ty, $table:expr, $READ_ALL:ty, $READ:ty, $CREATE:ty);
         $ty:ty where update = with $self:ident; {
-            where = [ $where_name:ident = $where_prop:expr ];
+            where = [ $($where:tt)+ ];
             set = [ $($set:tt)+ ];
         }, $($tail:tt)*) => {
         impl $crate::shared::D1EntityUpdate for $ty {
             fn update_query(self, d1: &::worker::D1Database) -> ::std::result::Result<::worker::D1PreparedStatement, String> {
                 let $self = self;
                 let (query, args) = $crate::macros::create_queries!(!update ($table);
-                    where = [ $where_name = $where_prop ];
+                    where = [ $($where)+ ];
                     set = [ $($set)+ ];
                 );
 
@@ -220,43 +184,23 @@ macro_rules! create_queries {
         $crate::macros::create_queries!{!queries 3 ($cty, $table, $READ_ALL, $READ, $CREATE, $ty); $($tail)*}
     };
 
-    (!update ($table:expr); where = [ $where_name:ident = $where_prop:expr ]; set = [$($set:tt)+];) => {{
-        let mut out_query = vec![];
-        let mut out_args = vec![];
-
-        $crate::macros::create_queries!(!update_set out_query, out_args; $($set)+);
+    (!update ($table:expr); where = [ $($where:tt)+ ]; set = [$($set:tt)+];) => {{
+        let (out_query, mut out_args) =
+            $crate::macros::create_queries!(!new_query; $($set)+);
 
         if out_args.len() == 0 {
             return Err("No properties to update".to_owned());
         }
 
-        out_args.push($where_prop.into());
+        let out_where =
+            $crate::macros::create_queries!(!new_query args = out_args; $($where)+);
 
         (
-            format!(concat!("UPDATE ", $table, " SET {} WHERE ", stringify!($where_name), " = ?"), out_query.join(", ")),
+            format!(concat!("UPDATE ", $table, " SET {} WHERE {}"), out_query.join(", "), out_where.join(" AND ")),
             out_args,
         )
     }};
 
-    (!update_set $out_query:ident, $out_args:ident;) => {};
-
-    (!update_set $out_query:ident, $out_args:ident; $prop:ident = $val:expr, $($tail:tt)*) => {
-        if let Some(prop) = $val {
-            $out_query.push(concat!(stringify!($prop), " = ?"));
-            $out_args.push(prop.into());
-        }
-
-        $crate::macros::create_queries!(!update_set $out_query, $out_args; $($tail)*);
-    };
-
-    (!update_set $out_query:ident, $out_args:ident; $var:ident.$prop:ident, $($tail:tt)*) => {
-        if let Some(prop) = $var.$prop {
-            $out_query.push(concat!(stringify!($prop), " = ?"));
-            $out_args.push(prop.into());
-        }
-
-        $crate::macros::create_queries!(!update_set $out_query, $out_args; $($tail)*);
-    };
 
     (!queries 3 ($cty:ty, $table:expr, $READ_ALL:ty, $READ:ty, $CREATE:ty, $UPDATE:ty); $ty:ty where delete = | $self:ident, $db:ident | $body:block, $($tail:tt)*) => {
         impl $crate::shared::D1EntityDelete for $ty {
@@ -285,57 +229,112 @@ macro_rules! create_queries {
     };
 
     (!delete ($table:expr); [$($set:tt)+];) => {{
-        let mut out_query = vec![];
-        let mut out_args = vec![];
-
-        $crate::macros::create_queries!(!delete_set out_query, out_args; $($set)+);
+        let (out_query, out_args) =
+            $crate::macros::create_queries!(!new_query; $($set)+);
 
         if out_args.len() == 0 {
             return Err("No properties to delete".to_owned());
         }
 
         (
-            format!(concat!("UPDATE ", $table, " SET delete = FALSE WHERE {}"), out_query.join(", ")),
+            format!(concat!("UPDATE ", $table, " SET delete = FALSE WHERE {}"), out_query.join(" AND ")),
             out_args,
         )
     }};
 
-    (!delete_set $out_query:ident, $out_args:ident;) => {};
-
-    (!delete_set $out_query:ident, $out_args:ident; $prop:ident ?= $val:expr, $($tail:tt)*) => {
-        if let Some($prop) = $val {
-            $out_query.push(concat!(stringify!($prop), " = ?"));
-            $out_args.push($prop.into());
-        }
-
-        $crate::macros::create_queries!(!delete_set $out_query, $out_args; $($tail)*);
+    (!queries 4 ($cty:ty, $table:expr, $READ_ALL:ty, $READ:ty, $CREATE:ty, $UPDATE:ty, $DELETE:ty); ) => {
+        impl $crate::shared::D1EntityQueries<$CREATE, $READ_ALL, $READ, $UPDATE, $DELETE> for $cty { }
     };
 
-    (!delete_set $out_query:ident, $out_args:ident; $prop:ident = $val:expr, $($tail:tt)*) => {
+    (!new_query ; $($tail:tt)*) => {{
+        let mut out_query = vec![];
+        let mut out_args = vec![];
+
+        $crate::macros::create_queries!(!set out_query, out_args; $($tail)+);
+
+        (out_query, out_args)
+    }};
+
+    (!new_query query = $out_query:ident; $($tail:tt)*) => {{
+        let mut out_args = vec![];
+
+        $crate::macros::create_queries!(!set $out_query, out_args; $($tail)+);
+
+        out_args
+    }};
+
+    (!new_query args = $out_args:ident; $($tail:tt)*) => {{
+        let mut out_query = vec![];
+
+        $crate::macros::create_queries!(!set out_query, $out_args; $($tail)+);
+
+        out_query
+    }};
+
+    (!set $out_query:ident, $out_args:ident;) => {};
+
+    (!set $out_query:ident, $out_args:ident; $prop:ident = $val:expr; $($tail:tt)*) => {
         $out_query.push(concat!(stringify!($prop), " = ?"));
         $out_args.push($val.into());
 
-        $crate::macros::create_queries!(!delete_set $out_query, $out_args; $($tail)*);
+        $crate::macros::create_queries!(!set $out_query, $out_args; $($tail)*);
     };
 
-    (!delete_set $out_query:ident, $out_args:ident; $var:ident?.$prop:ident, $($tail:tt)*) => {
-        if let Some($prop) = $var.$prop {
+    (!set $out_query:ident, $out_args:ident; $prop:ident = $val:expr; $($tail:tt)*) => {
+        $out_query.push(concat!(stringify!($prop), " = ?"));
+        $out_args.push((&$val).into());
+
+        $crate::macros::create_queries!(!set $out_query, $out_args; $($tail)*);
+    };
+
+    (!set $out_query:ident, $out_args:ident; $prop:ident ?= $val:expr; $($tail:tt)*) => {
+        if let Some(prop) = $val {
             $out_query.push(concat!(stringify!($prop), " = ?"));
-            $out_args.push($prop.into());
+            $out_args.push(prop.into());
         }
 
-        $crate::macros::create_queries!(!delete_set $out_query, $out_args; $($tail)*);
+        $crate::macros::create_queries!(!set $out_query, $out_args; $($tail)*);
     };
 
-    (!delete_set $out_query:ident, $out_args:ident; $var:ident.$prop:ident, $($tail:tt)*) => {
+    (!set $out_query:ident, $out_args:ident; &$prop:ident ?= $val:expr; $($tail:tt)*) => {
+        if let Some(ref prop) = $val {
+            $out_query.push(concat!(stringify!($prop), " = ?"));
+            $out_args.push(prop.into());
+        }
+
+        $crate::macros::create_queries!(!set $out_query, $out_args; $($tail)*);
+    };
+
+    (!set $out_query:ident, $out_args:ident; $var:ident.$prop:ident; $($tail:tt)*) => {
         $out_query.push(concat!(stringify!($prop), " = ?"));
         $out_args.push(($var.$prop).into());
 
-        $crate::macros::create_queries!(!delete_set $out_query, $out_args; $($tail)*);
+        $crate::macros::create_queries!(!set $out_query, $out_args; $($tail)*);
     };
 
-    (!queries 4 ($cty:ty, $table:expr, $READ_ALL:ty, $READ:ty, $CREATE:ty, $UPDATE:ty, $DELETE:ty); ) => {
-        impl $crate::shared::D1EntityQueries<$CREATE, $READ_ALL, $READ, $UPDATE, $DELETE> for $cty { }
+    (!set $out_query:ident, $out_args:ident; &$var:ident.$prop:ident; $($tail:tt)*) => {
+        $out_query.push(concat!(stringify!($prop), " = ?"));
+        $out_args.push((&$var.$prop).into());
+
+        $crate::macros::create_queries!(!set $out_query, $out_args; $($tail)*);
+    };
+
+    (!set $out_query:ident, $out_args:ident; $var:ident?.$prop:ident; $($tail:tt)*) => {
+        if let Some(prop) = $var.$prop {
+            $out_query.push(concat!(stringify!($prop), " = ?"));
+            $out_args.push(prop.into());
+        }
+
+        $crate::macros::create_queries!(!set $out_query, $out_args; $($tail)*);
+    };
+
+    (!set $out_query:ident, $out_args:ident; &$var:ident?.$prop:ident; $($tail:tt)*) => {
+        if let Some(ref prop) = $var.$prop {
+            $out_query.push(concat!(stringify!($prop), " = ?"));
+            $out_args.push(prop.into());
+        }
+
+        $crate::macros::create_queries!(!set $out_query, $out_args; $($tail)*);
     };
 }
 

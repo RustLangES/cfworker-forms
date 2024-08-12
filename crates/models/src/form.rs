@@ -43,6 +43,8 @@ pub struct FormDetails {
     pub deleted: bool,
     pub edition: String,
     pub multiple_times: bool,
+
+    #[serde(serialize_with = "crate::shared::date_ser")]
     pub created_at: time::OffsetDateTime,
     pub questions: Vec<QuestionDetails>,
 }
@@ -110,11 +112,16 @@ impl From<FormJs> for Form {
 
 create_queries! {
     Form where select_all = "id, title, require_login, deleted, created_at, edition, multiple_times",
-    FormRead where select = with form; [ form.id, ],
+    FormRead where select = with form; [ form.id; ],
     FormCreate where create = with form; [ form.title, form.require_login, form.edition, form.multiple_times, ],
     FormUpdate where update = with form; {
-        where = [ id = form.id ];
-        set = [ form.title, form.require_login, form.edition, form.multiple_times, ];
+        where = [ form.id; ];
+        set = [
+            &form?.title;
+            form?.require_login;
+            &form?.edition;
+            form?.multiple_times;
+        ];
     },
-    FormDelete where delete = with form; [ form.id, ],
+    FormDelete where delete = with form; [ form.id; ],
 }

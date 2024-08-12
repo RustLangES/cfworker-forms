@@ -1,11 +1,13 @@
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use base64::Engine;
-use forms_shared::FormsResponse;
-use oauth2::basic::BasicClient;
+use forms_shared::{FormsResponse, IntoResponse};
+use oauth2::basic::{BasicClient, BasicTokenType};
 use oauth2::{
-    AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, EndpointNotSet, EndpointSet,
-    RedirectUrl, Scope, TokenUrl,
+    AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, EmptyExtraTokenFields,
+    EndpointNotSet, EndpointSet, RedirectUrl, Scope, StandardTokenResponse, TokenResponse,
+    TokenUrl,
 };
+use serde::Deserialize;
 use worker::{Method, Request, RequestInit};
 
 use crate::auth::shared::vec_u8_to_uint8;
@@ -22,6 +24,8 @@ pub const PATH_CALLBACK: &str = "/api/login/github/callback";
 
 pub type GithubClient =
     BasicClient<EndpointSet, EndpointNotSet, EndpointNotSet, EndpointNotSet, EndpointSet>;
+
+pub type GithubToken = StandardTokenResponse<EmptyExtraTokenFields, BasicTokenType>;
 
 pub fn client_id(ctx: &RouterContext) -> ClientId {
     ClientId::new(
@@ -97,8 +101,6 @@ pub async fn callback(
     ctx: &RouterContext,
     req: oauth2::HttpRequest,
 ) -> Result<oauth2::HttpResponse, worker::Error> {
-    worker::console_log!("{req:?}");
-
     let client_id = client_id(ctx);
     let client_secret = client_secret(&ctx);
 
@@ -125,9 +127,7 @@ pub async fn callback(
     )
     .unwrap();
 
-    worker::console_log!("{req:?}");
     let res = worker::Fetch::Request(req).send().await?;
-    worker::console_log!("{res:?}");
 
     let res = worker::response_from_wasm(res.into())?;
 
@@ -148,4 +148,51 @@ async fn res_worker_to_oauth2(res: worker::HttpResponse) -> oauth2::HttpResponse
     }
 
     oauth2::HttpResponse::from_parts(parts, out_buffer)
+}
+
+/// ```json
+/// {
+///   "id": "integer",
+///   "avatar_url": "string",
+///   "name": "string",
+///   "email": "string"
+/// }
+/// ```
+#[derive(Debug, Deserialize)]
+pub struct GithubUser {
+    pub id: u64,
+    // pub avatar_url: String,
+    // pub name: String,
+    pub email: String,
+}
+
+/// https://docs.github.com/en/rest/users/emails?apiVersion=2022-11-28#list-email-addresses-for-the-authenticated-user
+pub async fn get_user(token: GithubToken) -> Result<GithubUser, worker::Response> {
+    let token = token.access_token().secret();
+
+    let headers = FormsResponse::headers(&[
+        ("accept", "application/vnd.github+json"),
+        ("x-github-api-version", "2022-11-28"),
+        ("user-agent", "@RustLangES Forms"),
+        ("authorization", &format!("Bearer {token}")),
+    ])
+    .map_err(IntoResponse::into_response)?;
+
+    let req = Request::new_with_init(
+        "https://api.github.com/user",
+        RequestInit::new()
+            .with_method(Method::Get)
+            .with_headers(headers),
+    )
+    .map_err(IntoResponse::into_response)?;
+
+    let mut res = worker::Fetch::Request(req)
+        .send()
+        .await
+        .map_err(IntoResponse::into_response)?;
+
+    let res = res.text().await.map_err(IntoResponse::into_response)?;
+    let user = serde_json::from_str::<GithubUser>(&res).map_err(IntoResponse::into_response)?;
+
+    Ok(user)
 }

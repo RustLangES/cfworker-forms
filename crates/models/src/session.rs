@@ -154,8 +154,8 @@ create_queries! {
     },
     SessionCreate where create = with session; [ session.form_id, session?.external_id, session.token, ],
     SessionUpdate where update = with session; {
-        where = [ id = session.id ];
-        set = [ session.external_id, session.token, ];
+        where = [ session.id; ];
+        set = [ session.external_id; session.token; ];
     },
     SessionDelete where delete = |session, db| {
         db

@@ -1,4 +1,5 @@
 mod admins;
+mod answer;
 mod auth;
 mod form;
 mod question;
@@ -27,6 +28,14 @@ pub async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
         .get_async("/api/login/github/callback", auth::github_callback);
 
     router = router
+        // Admin Session
+        .get_async("/api/session", session::get_admin)
+        // General Session
+        .get_async("/api/form/:form_id/session", session::get)
+        // Unique Session
+        .delete_async("/api/form/:form_id/session", session::delete);
+
+    router = router
         // General Form
         .get_async("/api/form", form::get_all)
         .post_async("/api/form", form::post)
@@ -44,12 +53,9 @@ pub async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
         .delete_async("/api/form/:form_id/question/:id", question::delete);
 
     router = router
-        // Admin Session
-        .get_async("/api/session", session::get_admin)
-        // General Session
-        .get_async("/api/form/:form_id/session", session::get)
-        // Unique Session
-        .delete_async("/api/form/:form_id/session", session::delete);
+        // Unique Answer
+        .get_async("/api/form/:form_id/question/:id/answer", answer::get)
+        .post_async("/api/form/:form_id/question/:id/answer", answer::post);
 
     router.run(req, env).await
 }

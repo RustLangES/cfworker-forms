@@ -3,7 +3,7 @@
     "crane": {
       "inputs": {
         "nixpkgs": [
-          "nixpkgs-unstable"
+          "nixpkgs"
         ]
       },
       "locked": {
@@ -73,13 +73,13 @@
         "type": "github"
       }
     },
-    "nixpkgs-unstable": {
+    "nixpkgs_2": {
       "locked": {
-        "lastModified": 1722813957,
-        "narHash": "sha256-IAoYyYnED7P8zrBFMnmp7ydaJfwTnwcnqxUElC1I26Y=",
+        "lastModified": 1722995383,
+        "narHash": "sha256-UzuXo7ZM8ZK0SkWFhHocKkLSGQPHS4JxaE1jvVR4fUo=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "cb9a96f23c491c081b38eab96d22fa958043c9fa",
+        "rev": "957d95fc8b9bf1eb60d43f8d2eba352b71bbf2be",
         "type": "github"
       },
       "original": {
@@ -89,30 +89,12 @@
         "type": "github"
       }
     },
-    "nixpkgs_2": {
-      "locked": {
-        "lastModified": 1723151639,
-        "narHash": "sha256-6WWy4Oj7GcF6snbuoHFtsHeTyznuDaAcrcldaKKzD1g=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "c33c2cea1d901e2f6b4e042f9acdb6a701e4c1f2",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "ref": "master",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
     "root": {
       "inputs": {
         "crane": "crane",
         "fenix": "fenix",
         "flake-utils": "flake-utils",
-        "nixpkgs": "nixpkgs_2",
-        "nixpkgs-unstable": "nixpkgs-unstable",
-        "workerd": "workerd"
+        "nixpkgs": "nixpkgs_2"
       }
     },
     "rust-analyzer-src": {
@@ -144,26 +126,6 @@
       "original": {
         "owner": "nix-systems",
         "repo": "default",
-        "type": "github"
-      }
-    },
-    "workerd": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs-unstable"
-        ]
-      },
-      "locked": {
-        "lastModified": 1722648858,
-        "narHash": "sha256-Imf86heJHYNj2lwPXj0RzragG/hh517hc0/5WzodFRQ=",
-        "owner": "getchoo",
-        "repo": "workerd-docker",
-        "rev": "01ed466750bcda8cefdb91c9a97e64a4bd2f1044",
-        "type": "github"
-      },
-      "original": {
-        "owner": "getchoo",
-        "repo": "workerd-docker",
         "type": "github"
       }
     }

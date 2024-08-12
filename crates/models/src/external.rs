@@ -6,9 +6,9 @@ use crate::create_queries;
 pub struct ExternalJs {
     pub id: usize,
 
-    pub external_id: usize,
-    pub external_kind: String,
-    pub external_email: String,
+    pub external_id: String,
+    pub kind: String,
+    pub email: String,
     pub token: String,
 
     pub created_at: i64,
@@ -18,9 +18,9 @@ pub struct ExternalJs {
 pub struct External {
     pub id: usize,
 
-    pub external_id: usize,
-    pub external_kind: String,
-    pub external_email: String,
+    pub external_id: String,
+    pub kind: String,
+    pub email: String,
     pub token: String,
 
     pub created_at: time::OffsetDateTime,
@@ -28,15 +28,15 @@ pub struct External {
 
 #[derive(Debug)]
 pub struct ExternalRead {
-    pub token: String,
+    pub external_id: Option<String>,
+    pub token: Option<String>,
 }
 
 #[derive(Deserialize)]
 pub struct ExternalCreate {
-    pub form_id: usize,
-    pub external_id: usize,
-    pub external_kind: String,
-    pub external_email: String,
+    pub external_id: String,
+    pub kind: String,
+    pub email: String,
     pub token: String,
 }
 
@@ -44,9 +44,7 @@ pub struct ExternalCreate {
 pub struct ExternalUpdate {
     pub id: usize,
 
-    pub external_id: Option<usize>,
-    pub external_kind: Option<String>,
-    pub external_email: Option<String>,
+    pub email: Option<String>,
 
     pub token: Option<String>,
 }
@@ -61,8 +59,8 @@ impl From<ExternalJs> for External {
         ExternalJs {
             id,
             external_id,
-            external_email,
-            external_kind,
+            email,
+            kind,
             token,
             created_at,
         }: ExternalJs,
@@ -70,8 +68,8 @@ impl From<ExternalJs> for External {
         Self {
             id,
             external_id,
-            external_email,
-            external_kind,
+            email,
+            kind,
             token,
             created_at: time::OffsetDateTime::from_unix_timestamp(created_at).unwrap(),
         }
@@ -79,17 +77,23 @@ impl From<ExternalJs> for External {
 }
 
 create_queries! {
-    External where select_all = "id, form_id, external_id",
-    ExternalRead where select = with external; [ external.token, ],
+    External where select_all = "id, external_id, kind, email, token, created_at",
+    ExternalRead where select = with external; [
+        external?.external_id;
+        external?.token;
+    ],
     ExternalCreate where create = with external; [
         external.external_id,
-        external.external_kind,
-        external.external_email,
+        external.kind,
+        external.email,
         external.token,
     ],
     ExternalUpdate where update = with external; {
-        where = [ id = external.id ];
-        set = [ external.external_id, external.token, ];
+        where = [ external.id; ];
+        set = [
+            &external?.email;
+            &external?.token;
+        ];
     },
     ExternalDelete where delete = |external, db| {
         db

@@ -109,28 +109,42 @@ pub async fn delete(req: worker::Request, ctx: RouterContext) -> WorkerHttpRespo
 pub async fn get_admin(req: worker::Request, ctx: RouterContext) -> WorkerHttpResponse {
     error_wrapper(req, ctx, |mut req, ctx, db| async move {
         let Some(token) = get_auth(&mut req)? else {
-            return FormsResponse::json(403, &serde_json::json!({
-                "errors": [ "No external token provided" ],
-                "success": false
-            }))
+            return FormsResponse::json(
+                403,
+                &serde_json::json!({
+                    "errors": [ "No external token provided" ],
+                    "success": false
+                }),
+            );
         };
 
-        let Some(external) = D1EntityRead::read_query(ExternalRead {
-            token
-        }, &db).first_into::<ExternalJs, External>().await? else {
-            return FormsResponse::json(403, &serde_json::json!({
-                "errors": [ "Eeeeeeeeeeeerorrrrrrrrrrrrrr logueate bien chabon" ],
-                "success": false
-            }))
+        let Some(external) = D1EntityRead::read_query(
+            ExternalRead {
+                token: Some(token),
+                external_id: None,
+            },
+            &db,
+        )
+        .first_into::<ExternalJs, External>()
+        .await?
+        else {
+            return FormsResponse::json(
+                403,
+                &serde_json::json!({
+                    "errors": [ "Eeeeeeeeeeeerorrrrrrrrrrrrrr logueate bien chabon" ],
+                    "success": false
+                }),
+            );
         };
 
-        let external_email = external.external_email;
-
-        if !get_admins(&ctx)?.contains(&external_email) {
-            return FormsResponse::json(403, &serde_json::json!({
-                "errors": [ "No admin email" ],
-                "success": false
-            }))
+        if !get_admins(&ctx)?.contains(&external.email) {
+            return FormsResponse::json(
+                403,
+                &serde_json::json!({
+                    "errors": [ "No admin email" ],
+                    "success": false
+                }),
+            );
         }
 
         let form_id = 0usize;
@@ -144,7 +158,6 @@ pub async fn get_admin(req: worker::Request, ctx: RouterContext) -> WorkerHttpRe
             .or_else(|| req.cf().and_then(|cf| cf.city()))
             .or_else(|| req.headers().get("user-agent").ok().flatten())
             .unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
-
 
         let mut hasher = DefaultHasher::new();
         device_id.hash(&mut hasher);
@@ -163,7 +176,7 @@ pub async fn get_admin(req: worker::Request, ctx: RouterContext) -> WorkerHttpRe
             &db,
             SessionCreate {
                 form_id,
-                external_id: None,
+                external_id: Some(external.id),
                 token: token.clone(),
             },
         )
@@ -178,7 +191,7 @@ pub async fn get_admin(req: worker::Request, ctx: RouterContext) -> WorkerHttpRe
                     &serde_json::json!({
                         "errors": [ ],
                         "messages": [
-                            "Your session already exists. This form is already open by another browser or client"
+                            "Your session already exists."
                         ],
                         "data": token,
                         "success": true

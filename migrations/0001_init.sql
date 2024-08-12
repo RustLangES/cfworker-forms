@@ -35,7 +35,8 @@ CREATE TABLE IF NOT EXISTS "Answer" (
   "deleted" BOOLEAN NOT NULL DEFAULT FALSE,
 	PRIMARY KEY("id"),
 	FOREIGN KEY ("form_id") REFERENCES "Form"("id")
-	ON UPDATE NO ACTION ON DELETE SET NULL
+	FOREIGN KEY ("question_id") REFERENCES "Question"("id")
+	FOREIGN KEY ("session_id") REFERENCES "Session"("id")
 );
 
 CREATE TABLE IF NOT EXISTS "Session" (
@@ -47,15 +48,15 @@ CREATE TABLE IF NOT EXISTS "Session" (
   "deleted" BOOLEAN NOT NULL DEFAULT FALSE,
 	PRIMARY KEY("id"),
 	FOREIGN KEY ("external_id") REFERENCES "External"("id")
-	ON UPDATE NO ACTION ON DELETE SET NULL
 );
 
 /* Login with External Provider */
 CREATE TABLE IF NOT EXISTS "External" (
 	"id" INTEGER NOT NULL UNIQUE,
+  "external_id" VARCHAR NOT NULL,
 	"token" VARCHAR NOT NULL UNIQUE,
 	"kind" VARCHAR NOT NULL,
-	"email" VARCHAR NOT NULL,
+	"email" VARCHAR NOT NULL UNIQUE,
 	"created_at" INTEGER NOT NULL,
   "deleted" BOOLEAN NOT NULL DEFAULT FALSE,
 	PRIMARY KEY("id")	
