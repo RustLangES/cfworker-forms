@@ -9,7 +9,7 @@ on:
       - ".github/workflows/deploy.yml"
       - "wrangler.toml"
       - "frontend/**"
-      - "backend/**"
+      - "crates/backend/**"
       - "Cargo.toml"
       - "Cargo.lock"
       - "rust-toolchain.toml"
@@ -31,7 +31,7 @@ jobs:
     strategy:
       matrix:
         path:
-          - backend
+          - crates/backend
           - frontend
     steps:
       - name: Checkout
