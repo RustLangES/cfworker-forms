@@ -17,4 +17,4 @@ database_name = "forms"
 migrations_dir = "../../migrations/"
 
 # Change to your test database
-database_id = "d9378a34-9fe6-4232-9b8f-3322287d4cd0"
+database_id = "ea1e90b6-9ed0-44ec-8a82-05417fdcc638"
