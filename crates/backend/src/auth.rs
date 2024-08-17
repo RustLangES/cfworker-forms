@@ -14,8 +14,15 @@ use crate::shared::error_wrapper;
 use crate::RouterContext;
 
 pub async fn github(req: worker::Request, ctx: RouterContext) -> WorkerHttpResponse {
-    error_wrapper(req, ctx, |_, ctx, _| async move {
-        let authorize_url = github::get_authorize(&ctx);
+    error_wrapper(req, ctx, |req, ctx, _| async move {
+        let redirect_to = req
+            .url()
+            .map_err(IntoResponse::into_response)?
+            .query_pairs()
+            .filter_map(|(name, val)| (name == "redirect_to").then_some(val.to_string()))
+            .next();
+
+        let authorize_url = github::get_authorize(&ctx, redirect_to);
 
         worker::Response::redirect(authorize_url).map_err(IntoResponse::into_response)
     })
@@ -27,7 +34,7 @@ pub async fn github_callback(req: worker::Request, ctx: RouterContext) -> Worker
         req,
         ctx,
         github::get_token,
-        |_req, _ctx, db, token| async move {
+        |_req, _ctx, db, token, redirect_to| async move {
             let external_token =
                 base64::prelude::BASE64_STANDARD.encode(token.access_token().secret());
 
@@ -75,6 +82,22 @@ pub async fn github_callback(req: worker::Request, ctx: RouterContext) -> Worker
                 )
                 .run()
                 .await?;
+            }
+
+            if let Some(redirect_to) = redirect_to {
+                let url =
+                    worker::Url::parse_with_params(&redirect_to, &[("code", &external_token)])
+                        .map_err(|err| {
+                            FormsResponse::text(
+                                500,
+                                format!("Cannot parse redirect url ({redirect_to}): {err}"),
+                            )
+                            .into_response()
+                        })?;
+
+                worker::console_log!("{}", url.as_str());
+
+                return worker::Response::redirect(url).map_err(IntoResponse::into_response);
             }
 
             FormsResponse::json(

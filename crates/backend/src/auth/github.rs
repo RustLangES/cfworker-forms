@@ -72,9 +72,22 @@ pub fn client(ctx: &RouterContext) -> GithubClient {
         )
 }
 
-pub fn get_authorize(ctx: &RouterContext) -> worker::Url {
+fn authorize_url(redirect_to: Option<String>) -> oauth2::CsrfToken {
+    if let Some(redirect_to) = redirect_to {
+        let rand = CsrfToken::new_random_len(3);
+        let rand = rand.secret();
+
+        let state = format!("url%{rand}%{redirect_to}");
+
+        serde_json::from_value::<CsrfToken>(serde_json::json!(state)).unwrap()
+    } else {
+        CsrfToken::new_random()
+    }
+}
+
+pub fn get_authorize(ctx: &RouterContext, redirect_to: Option<String>) -> worker::Url {
     let (authorize_url, _) = client(&ctx)
-        .authorize_url(CsrfToken::new_random)
+        .authorize_url(|| authorize_url(redirect_to))
         .add_scope(Scope::new("user:email".to_string()))
         .url();
 

@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::future::Future;
 
 use oauth2::{basic::BasicTokenType, EmptyExtraTokenFields, StandardTokenResponse};
@@ -18,6 +19,7 @@ pub async fn auth_callback<R, RouteResponse>(
             RouterContext,
             worker::D1Database,
             StandardTokenResponse<EmptyExtraTokenFields, BasicTokenType>,
+            Option<String>,
         ) -> RouteResponse
         + Clone,
 ) -> WorkerHttpResponse
@@ -30,13 +32,17 @@ where
         let route = route.clone();
 
         async move {
-            let Some(code) = req
-                .url()
-                .unwrap()
-                .query_pairs()
-                .find(|n| n.0 == "code")
-                .map(|n| n.1.to_string())
-            else {
+            let query_pairs = req.url().unwrap();
+            let query_pairs = query_pairs.query_pairs();
+
+            let (code, state) =
+                query_pairs.fold((None, None), |prev, (key, val)| match key.borrow() {
+                    "code" => (Some(val.to_string()), prev.1),
+                    "state" => (prev.0, Some(val.to_string())),
+                    _ => prev,
+                });
+
+            let Some(code) = code else {
                 return FormsResponse::json(
                     400,
                     &serde_json::json!({
@@ -46,9 +52,15 @@ where
                 );
             };
 
+            let redirect_to = state
+                .filter(|state| state.starts_with("url%"))
+                .map(|state| Some((state[6..].find("%")? + 7, state)))
+                .flatten()
+                .map(|(start, state)| state[start..].to_string());
+
             let (ctx, token) = get_token(ctx, code).await;
 
-            route(req, ctx, db, token?).await
+            route(req, ctx, db, token?, redirect_to).await
         }
     })
     .await
