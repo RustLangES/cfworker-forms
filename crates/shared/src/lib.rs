@@ -69,6 +69,15 @@ pub trait IntoResponse {
     fn into_response(self) -> worker::Response;
 }
 
+impl IntoResponse for Result<worker::Response, worker::Response> {
+    fn into_response(self) -> worker::Response {
+        match self {
+            Ok(a) => a,
+            Err(b) => b,
+        }
+    }
+}
+
 impl IntoResponse for worker::Response {
     fn into_response(self) -> worker::Response {
         self

@@ -47,7 +47,14 @@ pub async fn get(req: Request, ctx: RouterContext) -> WorkerHttpResponse {
         let questions = questions.into_iter().map(Question::into_details).collect();
         let form = form.into_details(questions);
 
-        FormsResponse::json(200, &form)
+        FormsResponse::json(
+            200,
+            &serde_json::json!({
+                "errors": [],
+                "success": true,
+                "data": form
+            }),
+        )
     })
     .await
 }

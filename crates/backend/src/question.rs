@@ -23,13 +23,18 @@ pub async fn get_all(req: Request, ctx: RouterContext) -> Result<Response> {
             form_id: Some(form_id),
         };
 
-        let forms = Question::read_query(&db, body)
+        let questions = Question::read_query(&db, body)
             .all_into::<QuestionJs, Question>()
             .await?;
 
-        let res = serde_json::to_string(&forms).unwrap();
-
-        FormsResponse::ok(res)
+        FormsResponse::json(
+            200,
+            &serde_json::json!({
+                "errors": [],
+                "success": true,
+                "data": questions
+            }),
+        )
     })
     .await
 }

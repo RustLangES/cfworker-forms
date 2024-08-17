@@ -36,9 +36,14 @@ pub async fn get(req: Request, ctx: RouterContext) -> Result<Response> {
             );
         };
 
-        let res = serde_json::to_string(&answer).unwrap();
-
-        FormsResponse::ok(res)
+        FormsResponse::json(
+            200,
+            &serde_json::json!({
+                "errors": [],
+                "success": true,
+                "data": answer
+            }),
+        )
     })
     .await
 }
