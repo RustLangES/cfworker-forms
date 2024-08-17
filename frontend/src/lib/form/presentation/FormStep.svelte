@@ -29,20 +29,20 @@
 {#if active}
   <main in:slidein out:slideout>
 
-    <h1> {step.data.title} </h1>
+    <h1> {step.title} </h1>
 
-    {#if step.data.description}
-      <p> {step.data.description} </p>
+    {#if step.description}
+      <p> {step.description} </p>
     {/if}
 
     {#if step.type === "text"}
-      <FormStepText step={step} />
+      <!-- <FormStepText {step} /> -->
     {:else if step.type === "questionText"}
-      <FormStepQuestionText step={step} />
+      <FormStepQuestionText {step} />
     {:else if step.type === "options" && !step.data.canMultiple}
-      <FormStepOptions step={step} />
+      <FormStepOptions {step} />
     {:else if step.type === "options" && step.data.canMultiple}
-      <FormStepOptionsMultiple step={step} />
+      <FormStepOptionsMultiple {step} />
     {:else}
       {@debug step}
     {/if}

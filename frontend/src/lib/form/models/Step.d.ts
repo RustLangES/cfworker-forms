@@ -1,4 +1,8 @@
-type CreateStep<Type extends string, Data> = {
+type Step<Type extends string, Data extends object> = {
+  id: number,
+  title: string,
+  description: string,
+
   type: Type,
   data: Data,
 }
@@ -8,24 +12,13 @@ export type FormStep =
   | FormStepQuestionText
   | FormStepOptions;
 
-export type FormStepText = CreateStep<"text", {
-  title: string,
-  description?: string,
-}>;
+export type FormStepText = Step<"text", {}>;
 
-export type FormStepQuestionText = CreateStep<"questionText", {
-  title: string,
-  description?: string,
+export type FormStepQuestionText = Step<"questionText", { required?: boolean }>;
 
-  required: boolean
-}>;
-
-export type FormStepOptions = CreateStep<"options", {
-  title: string,
-  description?: string,
+export type FormStepOptions = Step<"options", {
+  canMultiple: boolean,
+  required: boolean,
 
   options: Array<string>,
-
-  required: boolean,
-  canMultiple: boolean
 }>;
