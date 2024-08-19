@@ -85,11 +85,10 @@ pub async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
         .post_async("/api/form/:form_id/question/:id/answer", answer::post);
 
     let method = req.method();
-    let origin = &req.url()?.origin().ascii_serialization();
 
     let mut res = router.run(req, env).await?;
 
-    if method != Method::Options {
+    if method != Method::Options && !(300..308).contains(&res.status_code()) {
         // CORS :\
         res.headers_mut()
             .set("Access-Control-Allow-Origin", "*")?;
