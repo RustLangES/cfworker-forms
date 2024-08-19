@@ -10,6 +10,34 @@ use forms_shared::{get_body, FormsResponse, WorkerHttpResponse};
 use crate::shared::{error_wrapper, needs_auth};
 use crate::RouterContext;
 
+pub async fn get_all(req: Request, ctx: RouterContext) -> Result<Response> {
+    error_wrapper(req, ctx, |mut req, ctx, db| async move {
+        let form_id = ctx.param("form_id").unwrap().parse().unwrap();
+
+        let session = needs_auth(&mut req, &db, Some(form_id)).await?;
+
+        let body = AnswerRead {
+            form_id,
+            question_id: None,
+            session_id: session.id,
+        };
+
+        let answer = D1EntityRead::read_query(body, &db)
+            .all_into::<AnswerJs, Answer>()
+            .await?;
+
+        FormsResponse::json(
+            200,
+            &serde_json::json!({
+                "errors": [],
+                "success": true,
+                "data": answer
+            }),
+        )
+    })
+    .await
+}
+
 pub async fn get(req: Request, ctx: RouterContext) -> Result<Response> {
     error_wrapper(req, ctx, |mut req, ctx, db| async move {
         let form_id = ctx.param("form_id").unwrap().parse().unwrap();
@@ -19,7 +47,7 @@ pub async fn get(req: Request, ctx: RouterContext) -> Result<Response> {
 
         let body = AnswerRead {
             form_id,
-            question_id,
+            question_id: Some(question_id),
             session_id: session.id,
         };
 
@@ -57,7 +85,7 @@ pub async fn post(req: Request, ctx: RouterContext) -> WorkerHttpResponse {
 
         let body = AnswerRead {
             form_id,
-            question_id,
+            question_id: Some(question_id),
             session_id: session.id,
         };
 

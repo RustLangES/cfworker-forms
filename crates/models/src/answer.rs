@@ -19,7 +19,7 @@ pub struct Answer {
 #[derive(Debug)]
 pub struct AnswerRead {
     pub form_id: usize,
-    pub question_id: usize,
+    pub question_id: Option<usize>,
     pub session_id: usize,
 }
 
@@ -82,7 +82,7 @@ create_queries! {
     Answer where select_all = "id, data",
     AnswerRead where select = with answer; [
         answer.form_id;
-        answer.question_id;
+        answer?.question_id;
         answer.session_id;
     ],
     AnswerCreate where create = with answer; [

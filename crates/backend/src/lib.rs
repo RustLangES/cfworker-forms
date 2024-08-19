@@ -79,6 +79,7 @@ pub async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
         .delete_async("/api/form/:form_id/question/:id", question::delete);
 
     router = router
+        .get_async("/api/form/:form_id/answer", answer::get_all)
         // Unique Answer
         .get_async("/api/form/:form_id/question/:id/answer", answer::get)
         .post_async("/api/form/:form_id/question/:id/answer", answer::post);
