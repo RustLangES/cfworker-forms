@@ -2,14 +2,27 @@
 	import type { FormStepOptions } from "../../models/Step.d";
 
   export let step: FormStepOptions;
+  export let answer: string;
+
+  export let sendAnswer: () => void;
+
+  let value: string[];
+
+  $: answer = value.join(",");
 </script>
 
 <ul>
   {#each step.data.options as option, idx}
     <li>
-      <input id={"option-" + idx} name="option" type="checkbox">
+      <input 
+        id={`q-${step.id}-op-${idx}`}
+        name="option"
+        type="checkbox"
+        bind:group={answer}
+        value={option}
+        on:change={sendAnswer} />
 
-      <label for={"option-" + idx}>
+      <label for={`q-${step.id}-op-${idx}`}>
         <span></span>
         {option}
       </label>

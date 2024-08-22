@@ -1,20 +1,26 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
+  import { createEventDispatcher, tick } from 'svelte';
 	import { quintOut } from 'svelte/easing';
   import { slide, SlideAxis, SlideDirection } from '$lib/presentation/transitions/slide';
 
 	import type { FormStep } from "../models/Step";
 
-	import FormStepText from "./steps/FormStepText.svelte";
 	import FormStepQuestionText from './steps/FormStepQuestionText.svelte';
 	import FormStepOptions from "./steps/FormStepOptions.svelte";
 	import FormStepOptionsMultiple from "./steps/FormStepOptionsMultiple.svelte";
+	import { browser } from '$app/environment';
 
   export let step: FormStep;
   export let active: boolean;
+  export let answer: string = "";
+  export let canPrev: boolean;
+  export let canNext: boolean;
+  export let get_answer: () => string;
 
 	const dispatch = createEventDispatcher<{
-		next: null; // does not accept a payload
+    prev: null;
+    next: null;
+    answer: [questionId: number, answer: string];
 	}>();
 
   const [slidein, slideout] = slide({
@@ -23,11 +29,34 @@
     axis: SlideAxis.Y,
     direction: SlideDirection.Backward,
     distance: 50
-  })
+  });
+
+  let disabled = false;
+
+  $: disabled = step.type !== "text" && answer.trim().length === 0;
+
+  async function updateAnswer(active: boolean) {
+    if (active && browser) {
+      await tick();
+      answer = get_answer();
+    }
+  }
+
+  $: updateAnswer(active);
+
+  let timer: NodeJS.Timeout;
+
+  function sendAnswer() {
+    // Debounce
+		clearTimeout(timer);
+		timer = setTimeout(() => {
+      if (answer) dispatch("answer", [step.id, answer]);
+		}, 550);
+  }
 </script>
 
 {#if active}
-  <main in:slidein out:slideout>
+  <section in:slidein out:slideout>
 
     <h1> {step.title} </h1>
 
@@ -38,23 +67,32 @@
     {#if step.type === "text"}
       <!-- <FormStepText {step} /> -->
     {:else if step.type === "questionText"}
-      <FormStepQuestionText {step} />
+      <FormStepQuestionText {step} bind:answer {sendAnswer} />
     {:else if step.type === "options" && !step.data.canMultiple}
-      <FormStepOptions {step} />
+      <FormStepOptions {step} bind:answer {sendAnswer} />
     {:else if step.type === "options" && step.data.canMultiple}
-      <FormStepOptionsMultiple {step} />
+      <FormStepOptionsMultiple {step} bind:answer {sendAnswer} />
     {:else}
       {@debug step}
     {/if}
 
-    <button on:click={() => dispatch("next")}>
-      Next
-    </button>
-  </main>
+    <div>
+      <button disabled={!canPrev} on:click={() => canPrev && dispatch("prev")}>
+        Anterior
+      </button>
+      <button {disabled} on:click={() => !disabled && dispatch("next")}>
+        {#if canNext}
+          Siguiente
+        {:else}
+          Finalizar
+        {/if}
+      </button>
+    </div>
+  </section>
 {/if}
 
 <style>
-  main {
+  section {
     position: fixed;
     top: 50vh;
     right: 40vw;
@@ -73,7 +111,7 @@
   }
 
   @media (max-width: 470px) {
-    main {
+    section {
       right: 1rem;
       width: calc(100vw - 2rem);
     }
@@ -92,12 +130,18 @@
     transition: filter 500ms ease;
   }
 
+  button:disabled {
+    color: #717171;
+    border-color: #717171;
+    pointer-events: none;
+  }
+
   button:hover {
     filter: drop-shadow(0px 0px 0px #000)
   }
 
   @media (max-width: 470px) {
-    main {
+    section {
       align-items: center;
     }
 

@@ -2,15 +2,24 @@
 	import type { FormStepOptions } from "../../models/Step.d";
 
   export let step: FormStepOptions;
+  export let answer: string;
+
+  export let sendAnswer: () => void;
 </script>
 
 <ul>
   {#each step.data.options as option, idx}
     <li>
-      <input id={"option-" + idx} name="option" type="radio">
+      <input 
+        id={`q-${step.id}-op-${idx}`}
+        name="option"
+        type="radio"
+        bind:group={answer}
+        value={option}
+        on:change={sendAnswer} />
 
-      <label for={"option-" + idx}>
-        <span></span>
+      <label for={`q-${step.id}-op-${idx}`}>
+        <span />
         {option}
       </label>
     </li>

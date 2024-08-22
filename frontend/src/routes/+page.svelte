@@ -1,18 +1,8 @@
 <script lang="ts">
-  const forms = [
-    {
-      id: 1,
-      title: "Form 1",
-      description: "Description 1",
-      edition: "",
-    },
-    {
-      id: 2,
-      title: "Event",
-      description: "My awesome event",
-      edition: "2024",
-    }
-  ];
+  import { fly } from "svelte/transition"
+
+	import Layout from "$lib/presentation/Layout.svelte";
+	import type { Form } from "$lib/form/models/Form.d";
 
   const defaultForm = {
     id: 0,
@@ -21,56 +11,76 @@
     description: ""
   };
 
-  let form = defaultForm;
+  type FormDetails = typeof defaultForm;
 
-  function mouseEnter(newForm: typeof defaultForm) {
-    return () => {
-      form = newForm;
-    }
-  }
+  export let data: { forms: Form[] };
 
-  function mouseLeave() {
-    if (form.id !== 0) {
-      form = defaultForm;
+
+  let actualFormDetails = defaultForm;
+  let actualFormSelected = 0;
+  let isTouch = false;
+
+  const clickOnForm = (ev: Event) => {
+    if (!isTouch) {
+      actualFormDetails.id = 0;
+      return;
     }
-  }
+
+    if (actualFormDetails.id === actualFormSelected) {
+      actualFormDetails.id = 0;
+    } else {
+      ev.preventDefault();
+      actualFormDetails = data.forms[actualFormSelected - 1];
+    }
+  };
+
+  const mouseEnter = (newForm: FormDetails) => () => {
+    if (!isTouch) {
+      actualFormDetails = newForm;
+    }
+  };
+  const mouseLeave = () => {
+    actualFormSelected = 0;
+    actualFormDetails = defaultForm;
+  };
+
+  const touchStart = (form: FormDetails) => () => {
+    actualFormSelected = form.id;
+    isTouch = true;
+  };
 </script>
 
-<main>
-  <header>
-    <h1>{form.title}</h1>
-    <p class="edition">{form.edition}</p>
-    <p class="description">{form.description}</p>
+<Layout container>
+  <header transition:fly={{ y: 50 }}>
+    <h1>{actualFormDetails.title}</h1>
+    <p class="edition">{actualFormDetails.edition ?? ""}</p>
+    <p class="description">{actualFormDetails.description ?? ""}</p>
   </header>
 
   <ul on:mouseleave={mouseLeave}>
-    {#each forms as form}
-      <li on:mouseenter={mouseEnter(form)}>
-        <a href={`/form/${form.id}`}>
+    {#each data.forms as form, idx}
+      <li class:dimmed={actualFormSelected !== 0 && actualFormSelected !== idx + 1}>
+        <a
+          href={`/form/${form.id}`}
+
+          on:mouseenter={mouseEnter(form)}
+
+          on:touchstart={touchStart(form)}
+
+          on:click={clickOnForm}
+        >
           <span>{form.title}</span>
           <span>&gt;</span>
         </a>
       </li>
     {/each}
   </ul>
-
-  <footer> RustLangES Forms </footer>
-</main>
+</Layout>
 
 <style>
   :global(body) {
     display: grid;
     place-items: center;
-    height: 100vh;
-  }
-
-  main {
-    width: 100vw;
-    max-width: 700px;
-    height: 100vh;
-
-    display: grid;
-    grid-template-rows: 1fr 2fr;
   }
 
   header {
@@ -88,6 +98,7 @@
     letter-spacing: 0.05ch;
 
     font-family: var(--fonts-heading);
+    font-weight: 400;
     color: var(--title);
   }
 
@@ -126,6 +137,11 @@
     filter: drop-shadow(0px 0px 0px #000)
   }
 
+  li.dimmed {
+    opacity: 0.8;
+    scale: 0.95;
+  }
+
   a {
     width: 100%;
     height: 100%;
@@ -136,16 +152,5 @@
 
     display: flex;
     justify-content: space-between;
-  }
-
-  footer {
-    position: fixed;
-    bottom: 1rem;
-    left: 50vw;
-    transform: translateX(-50%);
-
-    font-size: 0.8rem;
-    font-family: var(--fonts-heading);
-    color: var(--title);
   }
 </style>

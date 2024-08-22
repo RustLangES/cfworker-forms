@@ -2,9 +2,16 @@
 	import type { FormStepQuestionText } from "../../models/Step.d";
 
   export let step: FormStepQuestionText;
+  export let answer: string;
+
+  export let sendAnswer: () => void;
 </script>
 
-<input type="text" placeholder="Introduce tu respuesta" />
+<input
+  bind:value={answer}
+  on:input={sendAnswer}
+  type="text"
+  placeholder="Introduce tu respuesta" />
 
 <style>
   input {
