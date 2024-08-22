@@ -42,9 +42,12 @@ pub async fn needs_auth(
 
     let session = D1EntityRead::read_query(
         SessionRead {
-            token: auth_token,
+            token: Some(auth_token),
             form_id,
             complete: false,
+            device_id: None,
+            external_id: None,
+            deleted: None,
         },
         db,
     )
@@ -81,9 +84,12 @@ pub async fn needs_auth_complete(
 
     let session = D1EntityRead::read_query(
         SessionRead {
-            token: auth_token,
+            token: Some(auth_token),
             form_id,
             complete: true,
+            device_id: None,
+            external_id: None,
+            deleted: None,
         },
         db,
     )

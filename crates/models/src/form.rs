@@ -111,7 +111,7 @@ impl From<FormJs> for Form {
 }
 
 create_queries! {
-    Form where select_all = "id, title, require_login, deleted, created_at, edition, multiple_times",
+    Form where select_all = [ id, title, require_login, deleted, created_at, edition, multiple_times ],
     FormRead where select = with form; [ form.id; ],
     FormCreate where create = with form; [ form.title, form.require_login, form.edition, form.multiple_times, ],
     FormUpdate where update = with form; {

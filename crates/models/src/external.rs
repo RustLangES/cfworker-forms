@@ -77,7 +77,7 @@ impl From<ExternalJs> for External {
 }
 
 create_queries! {
-    External where select_all = "id, external_id, kind, email, token, created_at",
+    External where select_all = [ id, external_id, kind, email, token, created_at ],
     ExternalRead where select = with external; [
         external?.external_id;
         external?.token;

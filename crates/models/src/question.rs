@@ -149,7 +149,7 @@ impl QuestionCreate {
 }
 
 create_queries! {
-    Question where select_all = "id, title, description, type, data, deleted",
+    Question where select_all = [ id, title, description, type, data, deleted ],
     QuestionRead where select = with question; [ question?.id; question?.form_id; ],
     QuestionCreate where create = with question; [
         question.form_id,

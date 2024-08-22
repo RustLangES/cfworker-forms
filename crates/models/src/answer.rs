@@ -7,12 +7,22 @@ use crate::create_queries;
 #[derive(Deserialize)]
 pub struct AnswerJs {
     pub id: usize,
+
+    pub form_id: usize,
+    pub question_id: usize,
+    pub session_id: usize,
+
     pub data: String,
 }
 
 #[derive(Debug, Serialize)]
 pub struct Answer {
     pub id: usize,
+
+    pub form_id: usize,
+    pub question_id: usize,
+    pub session_id: usize,
+
     pub data: String,
 }
 
@@ -49,8 +59,22 @@ pub struct AnswerDelete {
 impl TryFrom<AnswerJs> for Answer {
     type Error = serde_json::Error;
 
-    fn try_from(AnswerJs { id, data }: AnswerJs) -> Result<Self, Self::Error> {
-        Ok(Self { id, data })
+    fn try_from(
+        AnswerJs {
+            id,
+            data,
+            form_id,
+            session_id,
+            question_id,
+        }: AnswerJs,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            id,
+            data,
+            form_id,
+            session_id,
+            question_id,
+        })
     }
 }
 
@@ -79,7 +103,7 @@ impl AnswerCreate {
 }
 
 create_queries! {
-    Answer where select_all = "id, data",
+    Answer where select_all = [ id, data, form_id, session_id, question_id ],
     AnswerRead where select = with answer; [
         answer.form_id;
         answer?.question_id;

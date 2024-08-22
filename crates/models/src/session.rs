@@ -2,9 +2,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::create_queries;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct SessionJs {
     pub id: usize,
+    pub device_id: String,
     pub form_id: usize,
 
     pub external_id: Option<usize>,
@@ -17,6 +18,7 @@ pub struct SessionJs {
 pub struct SessionCompleteJs {
     pub id: usize,
     pub form_id: usize,
+    pub device_id: String,
     pub created_at: i64,
 
     pub external_id: Option<usize>,
@@ -28,6 +30,7 @@ pub struct SessionCompleteJs {
 pub struct Session {
     pub id: usize,
     pub form_id: usize,
+    pub device_id: String,
     pub external_id: Option<usize>,
     pub token: String,
 
@@ -47,7 +50,10 @@ pub struct SessionComplete {
 
 #[derive(Debug)]
 pub struct SessionRead {
-    pub token: String,
+    pub token: Option<String>,
+    pub device_id: Option<String>,
+    pub external_id: Option<usize>,
+    pub deleted: Option<bool>,
     pub form_id: Option<usize>,
     pub complete: bool,
 }
@@ -55,6 +61,7 @@ pub struct SessionRead {
 #[derive(Deserialize)]
 pub struct SessionCreate {
     pub form_id: usize,
+    pub device_id: String,
     pub external_id: Option<usize>,
     pub token: String,
 }
@@ -75,6 +82,7 @@ impl From<SessionJs> for Session {
     fn from(
         SessionJs {
             id,
+            device_id,
             form_id,
             external_id,
             token,
@@ -83,6 +91,7 @@ impl From<SessionJs> for Session {
     ) -> Self {
         Self {
             id,
+            device_id,
             form_id,
             external_id,
             token,
@@ -95,6 +104,7 @@ impl From<SessionCompleteJs> for SessionComplete {
     fn from(
         SessionCompleteJs {
             id,
+            device_id: _,
             form_id,
             created_at,
 
@@ -115,19 +125,41 @@ impl From<SessionCompleteJs> for SessionComplete {
 }
 
 create_queries! {
-    Session where select_all = "id, form_id, external_id",
+    Session where select_all = [ id, form_id, external_id, device_id ],
     SessionRead where select = |session, db| {
-        let mut queries = vec![];
-        let mut args = vec![];
-
-        args.push(session.token.into());
+        let mut queries = vec!["deleted = ?"];
+        let mut args = vec![false.into()];
 
         let query = if session.complete {
-            queries.push("Session.token = ?");
+            if let Some(token) = session.token {
+                queries.push("Session.token = ?");
+                args.push(token.into());
+            }
+
+            match (session.external_id, session.device_id) {
+                (Some(external_id), Some(device_id)) => {
+                    queries.push("(Session.external_id = ? OR Session.device_id = ?)");
+                    args.push(external_id.into());
+                    args.push(device_id.into());
+                },
+                (Some(external_id), None) => {
+                    queries.push("Session.external_id = ?");
+                    args.push(external_id.into());
+                },
+                (None, Some(device_id)) => {
+                    queries.push("Session.device_id = ?");
+                    args.push(device_id.into());
+                },
+                (None, None) => {}
+            }
 
             if let Some(form_id) = session.form_id {
                 queries.push("Session.form_id = ?");
                 args.push(form_id.into());
+            }
+
+            if Some(true) == session.deleted {
+                queries.push("Session.token = NULL");
             }
 
             "SELECT \
@@ -137,22 +169,48 @@ create_queries! {
              LEFT JOIN External ON Session.external_id = External.id
              WHERE "
         } else {
-            queries.push("token = ?");
+            if let Some(token) = session.token {
+                queries.push("token = ?");
+                args.push(token.into());
+            }
+
+            match (session.external_id, session.device_id) {
+                (Some(external_id), Some(device_id)) => {
+                    queries.push("(external_id = ? OR device_id = ?)");
+                    args.push(external_id.into());
+                    args.push(device_id.into());
+                },
+                (Some(external_id), None) => {
+                    queries.push("external_id = ?");
+                    args.push(external_id.into());
+                },
+                (None, Some(device_id)) => {
+                    queries.push("device_id = ?");
+                    args.push(device_id.into());
+                },
+                (None, None) => {}
+            }
 
             if let Some(form_id) = session.form_id {
                 queries.push("form_id = ?");
                 args.push(form_id.into());
             }
 
+            if Some(true) == session.deleted {
+                queries.push("token ISNULL");
+            }
+
             "SELECT * FROM Session WHERE "
         }.to_owned();
 
+        worker::console_log!("SessionRead: {}", query.clone() + &queries.join(" AND "));
+        worker::console_log!("SessionRead: {args:?}");
         db
             .prepare(query + &queries.join(" AND "))
             .bind(&args)
             .map_err(|err| format!("{err}"))
     },
-    SessionCreate where create = with session; [ session.form_id, session?.external_id, session.token, ],
+    SessionCreate where create = with session; [ session.form_id, session.device_id, session?.external_id, session.token, ],
     SessionUpdate where update = with session; {
         where = [ session.id; ];
         set = [ session.external_id; session.token; ];
