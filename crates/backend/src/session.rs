@@ -62,8 +62,6 @@ pub async fn get(req: worker::Request, ctx: RouterContext) -> WorkerHttpResponse
             None
         };
 
-        worker::console_log!("{external_id:?}");
-
         let form_id: usize = ctx.param("form_id").unwrap().parse().unwrap();
 
         // Check if form exists
@@ -99,7 +97,6 @@ pub async fn get(req: worker::Request, ctx: RouterContext) -> WorkerHttpResponse
                 },
             ).first::<SessionJs>().await?;
 
-            worker::console_log!("{old_session:#?}");
             if old_session.is_some() {
                 return FormsResponse::json(403, &serde_json::json!({
                     "errors": [ "You already answer this" ],
@@ -155,7 +152,7 @@ pub async fn delete(req: worker::Request, ctx: RouterContext) -> WorkerHttpRespo
     error_wrapper(req, ctx, |mut req, _, db| async move {
         let Session { token, .. } = needs_auth(&mut req, &db, None).await?;
 
-        D1EntityDelete::delete_query(SessionDelete { token }, &db)
+        D1EntityDelete::delete_query(SessionDelete { token: token.unwrap() }, &db)
             .run()
             .await?;
 

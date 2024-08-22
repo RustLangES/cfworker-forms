@@ -9,7 +9,7 @@ pub struct SessionJs {
     pub form_id: usize,
 
     pub external_id: Option<usize>,
-    pub token: String,
+    pub token: Option<String>,
 
     pub created_at: i64,
 }
@@ -32,7 +32,7 @@ pub struct Session {
     pub form_id: usize,
     pub device_id: String,
     pub external_id: Option<usize>,
-    pub token: String,
+    pub token: Option<String>,
 
     pub created_at: time::OffsetDateTime,
 }
