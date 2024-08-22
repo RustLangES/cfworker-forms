@@ -34,7 +34,10 @@ pub async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
             // Handle CORS preflight requests.
             Ok(worker::Response::builder()
                 .with_header("Access-Control-Allow-Origin", "*")?
-                .with_header("Access-Control-Allow-Methods", "GET,HEAD,POST,OPTIONS")?
+                .with_header(
+                    "Access-Control-Allow-Methods",
+                    "GET,HEAD,POST,OPTIONS,DELETE",
+                )?
                 .with_header("Access-Control-Max-Age", "86400")?
                 .with_header(
                     "Access-Control-Allow-Headers",
@@ -90,8 +93,7 @@ pub async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
 
     if method != Method::Options && !(300..308).contains(&res.status_code()) {
         // CORS :\
-        res.headers_mut()
-            .set("Access-Control-Allow-Origin", "*")?;
+        res.headers_mut().set("Access-Control-Allow-Origin", "*")?;
         res.headers_mut().set("Vary", "Origin")?;
     }
 
