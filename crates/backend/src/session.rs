@@ -152,9 +152,14 @@ pub async fn delete(req: worker::Request, ctx: RouterContext) -> WorkerHttpRespo
     error_wrapper(req, ctx, |mut req, _, db| async move {
         let Session { token, .. } = needs_auth(&mut req, &db, None).await?;
 
-        D1EntityDelete::delete_query(SessionDelete { token: token.unwrap() }, &db)
-            .run()
-            .await?;
+        D1EntityDelete::delete_query(
+            SessionDelete {
+                token: token.unwrap(),
+            },
+            &db,
+        )
+        .run()
+        .await?;
 
         FormsResponse::ok("OK")
     })
