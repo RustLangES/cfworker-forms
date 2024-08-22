@@ -15,8 +15,8 @@ use crate::RouterContext;
 
 use super::shared::Oauth2Token;
 
-pub const ENV_CLIENT_ID: &str = "GITHUB_CLIENT_ID";
-pub const ENV_CLIENT_SECRET: &str = "GITHUB_CLIENT_SECRET";
+pub const ENV_CLIENT_ID: &str = "GH_CLIENT_ID";
+pub const ENV_CLIENT_SECRET: &str = "GH_CLIENT_SECRET";
 
 pub const URL_AUTH: &str = "https://github.com/login/oauth/authorize";
 pub const URL_TOKEN: &str = "https://github.com/login/oauth/access_token";
