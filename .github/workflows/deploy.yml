@@ -47,14 +47,18 @@ jobs:
           cargo install worker-build
       - name: Deploy
         uses: cloudflare/wrangler-action@v3
-        # env:
-          # YOUR_SECRET: ${{ secrets.YOUR_SECRET }}
-          # YOUR_OTHER_SECRET: ${{ secrets.YOUR_OTHER_SECRET }}
+        env:
+          GH_APP_CLIENT_ID: ${{ secrets.GH_APP_CLIENT_ID }}
+          GH_APP_CLIENT_SECRET: ${{ secrets.GH_APP_CLIENT_SECRET }}
+          ADMINS: ${{ secrets.ADMINS }}
+          API_HOST: ${{ secrets.API_HOST }}
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: "${{ matrix.path }}"
           wranglerVersion: "3.67.0"
-          # secrets: |
-          #   YOUR_SECRET
-          #   YOUR_OTHER_SECRET
+          secrets: |
+            GH_APP_CLIENT_ID
+            GH_APP_CLIENT_SECRET
+            ADMINS
+            API_HOST

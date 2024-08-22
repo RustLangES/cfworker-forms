@@ -73,11 +73,15 @@ jobs:
       - name: Deploy
         id: deploy
         uses: cloudflare/wrangler-action@v3
+        env:
+          API_HOST: ${{ secrets.API_HOST }}
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           wranglerVersion: "3.67.0"
           command: pages deploy ./frontend/dist --project-name=forms-page --branch="${{ env.BRANCH_NAME }}"
+          secrets: |
+            API_HOST
 
       - name: Extract hash from CF url Deploy
         run: |
