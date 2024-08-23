@@ -75,6 +75,7 @@ jobs:
         uses: cloudflare/wrangler-action@v3
         env:
           API_HOST: ${{ secrets.API_HOST }}
+          HOST: ${{ secrets.API_HOST }}
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -82,6 +83,7 @@ jobs:
           command: pages deploy ./frontend/dist --project-name=forms-page --branch="${{ env.BRANCH_NAME }}"
           secrets: |
             API_HOST
+            HOST
 
       - name: Extract hash from CF url Deploy
         run: |
