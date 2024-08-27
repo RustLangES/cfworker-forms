@@ -14,15 +14,8 @@ use crate::admins::get_admins;
 use crate::shared::{error_wrapper, needs_auth};
 use crate::RouterContext;
 
-fn get_device_id(req: &worker::Request) -> String {
-    req.headers()
-        .get("cf-connecting-ip")
-        .ok()
-        .flatten()
-        .or_else(|| req.headers().get("x-forwarded-for").ok().flatten())
-        .or_else(|| req.cf().and_then(|cf| cf.city()))
-        .or_else(|| req.headers().get("user-agent").ok().flatten())
-        .unwrap_or_else(|| uuid::Uuid::new_v4().to_string())
+fn get_device_id(req: &worker::Request) -> Option<String> {
+    req.headers().get("user-agent").ok().flatten()
 }
 
 fn get_session_token(form_id: usize, device_id: String) -> (String, String) {
@@ -81,7 +74,13 @@ pub async fn get(req: worker::Request, ctx: RouterContext) -> WorkerHttpResponse
             }));
         }
 
-        let device_id = get_device_id(&req);
+        let Some(device_id) = get_device_id(&req) else {
+            return FormsResponse::json(400, &serde_json::json!({
+                "errors": [ "Cannot get device id" ],
+                "success": false
+            }));
+        };
+
         let (device_id_hash, token) = get_session_token(form_id, device_id);
 
         if form.multiple_times.not() {
@@ -209,7 +208,16 @@ pub async fn get_admin(req: worker::Request, ctx: RouterContext) -> WorkerHttpRe
 
         let form_id = 0usize;
 
-        let device_id = get_device_id(&req);
+        let Some(device_id) = get_device_id(&req) else {
+            return FormsResponse::json(
+                400,
+                &serde_json::json!({
+                    "errors": [ "Cannot get device id" ],
+                    "success": false
+                }),
+            );
+        };
+
         let (device_id_hash, token) = get_session_token(form_id, device_id);
 
         match Session::create_query(
