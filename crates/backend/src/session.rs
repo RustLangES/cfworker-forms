@@ -15,7 +15,17 @@ use crate::shared::{error_wrapper, needs_auth};
 use crate::RouterContext;
 
 fn get_device_id(req: &worker::Request) -> Option<String> {
-    req.headers().get("user-agent").ok().flatten()
+    let site_id = req
+        .headers()
+        .get("cf-connecting-ip")
+        .ok()
+        .flatten()
+        .or_else(|| req.headers().get("x-forwarded-for").ok().flatten())
+        .or_else(|| req.cf().and_then(|cf| cf.city()))?;
+
+    let user_agent = req.headers().get("user-agent").ok().flatten()?;
+
+    Some(site_id + &user_agent)
 }
 
 fn get_session_token(form_id: usize, device_id: String) -> (String, String) {
