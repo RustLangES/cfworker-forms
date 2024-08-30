@@ -11,6 +11,8 @@ pub struct SessionJs {
     pub external_id: Option<usize>,
     pub token: Option<String>,
 
+    pub last_answer: Option<usize>,
+
     pub created_at: i64,
 }
 
@@ -20,6 +22,7 @@ pub struct SessionCompleteJs {
     pub form_id: usize,
     pub device_id: String,
     pub created_at: i64,
+    pub last_answer: Option<usize>,
 
     pub external_id: Option<usize>,
     pub external_kind: Option<String>,
@@ -33,6 +36,7 @@ pub struct Session {
     pub device_id: String,
     pub external_id: Option<usize>,
     pub token: Option<String>,
+    pub last_answer: Option<usize>,
 
     pub created_at: time::OffsetDateTime,
 }
@@ -42,17 +46,19 @@ pub struct SessionComplete {
     pub id: usize,
     pub form_id: usize,
     pub created_at: time::OffsetDateTime,
+    pub last_answer: Option<usize>,
 
     pub external_id: Option<usize>,
     pub external_kind: Option<String>,
     pub external_email: Option<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct SessionRead {
     pub token: Option<String>,
     pub device_id: Option<String>,
     pub external_id: Option<usize>,
+    pub external_token: Option<String>,
     pub deleted: Option<bool>,
     pub form_id: Option<usize>,
     pub complete: bool,
@@ -66,9 +72,10 @@ pub struct SessionCreate {
     pub token: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Default, Deserialize)]
 pub struct SessionUpdate {
     pub id: usize,
+    pub last_answer: Option<usize>,
     pub external_id: Option<usize>,
     pub token: Option<String>,
 }
@@ -83,6 +90,7 @@ impl From<SessionJs> for Session {
         SessionJs {
             id,
             device_id,
+            last_answer,
             form_id,
             external_id,
             token,
@@ -92,6 +100,7 @@ impl From<SessionJs> for Session {
         Self {
             id,
             device_id,
+            last_answer,
             form_id,
             external_id,
             token,
@@ -107,6 +116,7 @@ impl From<SessionCompleteJs> for SessionComplete {
             device_id: _,
             form_id,
             created_at,
+            last_answer,
 
             external_id,
             external_email,
@@ -117,6 +127,7 @@ impl From<SessionCompleteJs> for SessionComplete {
             id,
             form_id,
             created_at: time::OffsetDateTime::from_unix_timestamp(created_at).unwrap(),
+            last_answer,
             external_id,
             external_kind,
             external_email,
@@ -125,7 +136,7 @@ impl From<SessionCompleteJs> for SessionComplete {
 }
 
 create_queries! {
-    Session where select_all = [ id, form_id, external_id, device_id ],
+    Session where select_all = [ id, form_id, external_id, device_id, last_answer, ],
     SessionRead where select = |session, db| {
         let mut queries = vec!["deleted = ?"];
         let mut args = vec![false.into()];
@@ -136,21 +147,27 @@ create_queries! {
                 args.push(token.into());
             }
 
-            match (session.external_id, session.device_id) {
-                (Some(external_id), Some(device_id)) => {
-                    queries.push("(Session.external_id = ? OR Session.device_id = ?)");
+            match (session.external_id, session.external_token, session.device_id) {
+                (Some(external_id), Some(external_token), Some(device_id)) => {
+                    queries.push("(Session.external_id = ? OR External.token = ? OR Session.device_id = ?)");
                     args.push(external_id.into());
+                    args.push(external_token.into());
                     args.push(device_id.into());
                 },
-                (Some(external_id), None) => {
+                (None, Some(external_token), Some(device_id)) => {
+                    queries.push("(Session.device_id = ? OR External.token ?)");
+                    args.push(device_id.into());
+                    args.push(external_token.into());
+                },
+                (Some(external_id), None, None) => {
                     queries.push("Session.external_id = ?");
                     args.push(external_id.into());
                 },
-                (None, Some(device_id)) => {
+                (None, None, Some(device_id)) => {
                     queries.push("Session.device_id = ?");
                     args.push(device_id.into());
                 },
-                (None, None) => {}
+                (_, _, _) => {}
             }
 
             if let Some(form_id) = session.form_id {
@@ -213,7 +230,7 @@ create_queries! {
     SessionCreate where create = with session; [ session.form_id, session.device_id, session?.external_id, session.token, ],
     SessionUpdate where update = with session; {
         where = [ session.id; ];
-        set = [ session.external_id; session.token; ];
+        set = [ session.external_id; session.token; session.last_answer; ];
     },
     SessionDelete where delete = |session, db| {
         db
