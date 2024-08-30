@@ -14,7 +14,7 @@ use crate::admins::get_admins;
 use crate::shared::{error_wrapper, needs_auth};
 use crate::RouterContext;
 
-fn get_device_id(req: &worker::Request) -> Option<String> {
+pub fn get_device_id(req: &worker::Request) -> Option<String> {
     let site_id = req
         .headers()
         .get("cf-connecting-ip")
