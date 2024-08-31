@@ -44,10 +44,7 @@ pub async fn needs_auth(
         SessionRead {
             token: Some(auth_token),
             form_id,
-            complete: false,
-            device_id: None,
-            external_id: None,
-            deleted: None,
+            ..Default::default()
         },
         db,
     )
@@ -87,9 +84,7 @@ pub async fn needs_auth_complete(
             token: Some(auth_token),
             form_id,
             complete: true,
-            device_id: None,
-            external_id: None,
-            deleted: None,
+            ..Default::default()
         },
         db,
     )

@@ -25,7 +25,18 @@ pub fn get_device_id(req: &worker::Request) -> Option<String> {
 
     let user_agent = req.headers().get("user-agent").ok().flatten()?;
 
+    worker::console_log!("{site_id} + {user_agent}");
+
     Some(site_id + &user_agent)
+}
+
+pub fn get_device_id_hash(req: &worker::Request) -> Option<String> {
+    let device_id = get_device_id(req)?;
+
+    let mut hasher = DefaultHasher::new();
+    device_id.hash(&mut hasher);
+
+    Some(hasher.finish().to_string())
 }
 
 fn get_session_token(form_id: usize, device_id: String) -> (String, String) {
@@ -101,8 +112,7 @@ pub async fn get(req: worker::Request, ctx: RouterContext) -> WorkerHttpResponse
                     device_id: Some(device_id_hash.clone()),
                     form_id: Some(form_id),
                     deleted: Some(true),
-                    token: None,
-                    complete: false
+                    ..Default::default()
                 },
             ).first::<SessionJs>().await?;
 

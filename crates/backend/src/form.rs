@@ -11,7 +11,7 @@ use forms_shared::db::D1Action;
 use forms_shared::{get_auth, get_body, FormsResponse, WorkerHttpResponse};
 
 use crate::admins::needs_admin;
-use crate::session::get_device_id;
+use crate::session::get_device_id_hash;
 use crate::shared::error_wrapper;
 use crate::RouterContext;
 
@@ -47,10 +47,11 @@ pub async fn get(req: Request, ctx: RouterContext) -> WorkerHttpResponse {
         let body = if let Some(token) = get_auth(&mut req)? {
             Some(forms_models::session::SessionRead {
                 external_token: Some(token),
+                form_id: Some(form_id),
                 complete: true,
                 ..Default::default()
             })
-        } else if let Some(device_id) = get_device_id(&req) {
+        } else if let Some(device_id) = get_device_id_hash(&req) {
             Some(forms_models::session::SessionRead {
                 device_id: Some(device_id),
                 form_id: Some(form_id),
