@@ -186,6 +186,7 @@ macro_rules! create_query {
                 let (query, args) = $crate::macros::create_query!(!update $table; [ $($where)* ]; [ $($set)* ]);
 
                 ::worker::console_log!("update_query: {}", query);
+                ::worker::console_log!("update_query: {:?}", args);
                 d1.prepare(query).bind(&args).map_err(|err| format!("{err}"))
             }
         }
@@ -322,9 +323,9 @@ macro_rules! new_query {
         $crate::macros::new_query!(!set $out_query, $out_args; $($tail)*);
     };
 
-    (!set $out_query:ident, $out_args:ident; $prop:ident = $val:expr; $($tail:tt)*) => {
-        $out_query.push(concat!(stringify!($prop), " = ?"));
-        $out_args.push((&$val).into());
+    (!set $out_query:ident, $out_args:ident; $prop:literal = $val:expr; $($tail:tt)*) => {
+        $out_query.push(concat!($prop, " = ?"));
+        $out_args.push($val.into());
 
         $crate::macros::new_query!(!set $out_query, $out_args; $($tail)*);
     };
@@ -332,6 +333,15 @@ macro_rules! new_query {
     (!set $out_query:ident, $out_args:ident; $prop:ident ?= $val:expr; $($tail:tt)*) => {
         if let Some(prop) = $val {
             $out_query.push(concat!(stringify!($prop), " = ?"));
+            $out_args.push(prop.into());
+        }
+
+        $crate::macros::new_query!(!set $out_query, $out_args; $($tail)*);
+    };
+
+    (!set $out_query:ident, $out_args:ident; $prop:literal ?= $val:expr; $($tail:tt)*) => {
+        if let Some(prop) = $val {
+            $out_query.push(concat!($prop, " = ?"));
             $out_args.push(prop.into());
         }
 

@@ -1,6 +1,8 @@
+use std::ops::Not;
+
 use serde::{Deserialize, Serialize};
 
-use crate::create_queries;
+use crate::{create_queries, new_query};
 
 #[derive(Deserialize, Debug)]
 pub struct SessionJs {
@@ -72,7 +74,7 @@ pub struct SessionCreate {
     pub token: String,
 }
 
-#[derive(Default, Deserialize)]
+#[derive(Default, Deserialize, Debug)]
 pub struct SessionUpdate {
     pub id: usize,
     pub last_answer: Option<usize>,
@@ -140,6 +142,8 @@ create_queries! {
     SessionRead where select = |session, db| {
         let mut queries = vec!["deleted = ?"];
         let mut args = vec![false.into()];
+        let mut or_queries = None;
+        let mut or_args = vec![];
 
         let query = if session.complete {
             if let Some(token) = session.token {
@@ -147,27 +151,15 @@ create_queries! {
                 args.push(token.into());
             }
 
-            match (session.external_id, session.external_token, session.device_id) {
-                (Some(external_id), Some(external_token), Some(device_id)) => {
-                    queries.push("(Session.external_id = ? OR External.token = ? OR Session.device_id = ?)");
-                    args.push(external_id.into());
-                    args.push(external_token.into());
-                    args.push(device_id.into());
-                },
-                (None, Some(external_token), Some(device_id)) => {
-                    queries.push("(Session.device_id = ? OR External.token ?)");
-                    args.push(device_id.into());
-                    args.push(external_token.into());
-                },
-                (Some(external_id), None, None) => {
-                    queries.push("Session.external_id = ?");
-                    args.push(external_id.into());
-                },
-                (None, None, Some(device_id)) => {
-                    queries.push("Session.device_id = ?");
-                    args.push(device_id.into());
-                },
-                (_, _, _) => {}
+            let (or_query, or_args_) = new_query!(!;
+                "Session.external_id" ?= session.external_id;
+                "External.token" ?= session.external_token;
+                "Session.device_id" ?= session.device_id;
+            );
+
+            if !or_query.is_empty() {
+                or_queries = Some(format!("({})", or_query.join(" OR ")));
+                or_args = or_args_;
             }
 
             if let Some(form_id) = session.form_id {
@@ -191,21 +183,15 @@ create_queries! {
                 args.push(token.into());
             }
 
-            match (session.external_id, session.device_id) {
-                (Some(external_id), Some(device_id)) => {
-                    queries.push("(external_id = ? OR device_id = ?)");
-                    args.push(external_id.into());
-                    args.push(device_id.into());
-                },
-                (Some(external_id), None) => {
-                    queries.push("external_id = ?");
-                    args.push(external_id.into());
-                },
-                (None, Some(device_id)) => {
-                    queries.push("device_id = ?");
-                    args.push(device_id.into());
-                },
-                (None, None) => {}
+            let (or_query, or_args_) = new_query!(!;
+                "external_id" ?= session.external_id;
+                // "External.token" ?= session.external_token;
+                "device_id" ?= session.device_id;
+            );
+
+            if !or_query.is_empty() {
+                or_queries = Some(format!("({})", or_query.join(" OR ")));
+                or_args = or_args_;
             }
 
             if let Some(form_id) = session.form_id {
@@ -220,17 +206,32 @@ create_queries! {
             "SELECT * FROM Session WHERE "
         }.to_owned();
 
-        worker::console_log!("SessionRead: {}", query.clone() + &queries.join(" AND "));
+        let queries = queries.join(" AND ");
+        let or_queries = or_queries
+            .take()
+            .map(|s| s + queries
+                .is_empty()
+                .not()
+                .then_some(" AND ")
+                .unwrap_or_default())
+            .unwrap_or(String::new());
+        let query = query + &or_queries + &queries;
+
+        or_args.append(&mut args);
+        let args = or_args;
+
+        worker::console_log!("SessionRead: {query}");
         worker::console_log!("SessionRead: {args:?}");
+
         db
-            .prepare(query + &queries.join(" AND "))
+            .prepare(query)
             .bind(&args)
             .map_err(|err| format!("{err}"))
     },
     SessionCreate where create = with session; [ session.form_id, session.device_id, session?.external_id, session.token, ],
     SessionUpdate where update = with session; {
         where = [ session.id; ];
-        set = [ session.external_id; session.token; session.last_answer; ];
+        set = [ session?.external_id; session?.token; session?.last_answer; ];
     },
     SessionDelete where delete = |session, db| {
         db
