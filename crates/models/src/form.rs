@@ -48,7 +48,7 @@ pub struct FormDetails {
     pub created_at: time::OffsetDateTime,
 
     pub questions: Vec<QuestionDetails>,
-    pub last_answer: Option<usize>
+    pub last_answer: Option<usize>,
 }
 
 #[derive(Deserialize)]
@@ -74,7 +74,11 @@ pub struct FormDelete {
 }
 
 impl Form {
-    pub fn into_details(self, questions: Vec<QuestionDetails>, last_answer: Option<usize>) -> FormDetails {
+    pub fn into_details(
+        self,
+        questions: Vec<QuestionDetails>,
+        last_answer: Option<usize>,
+    ) -> FormDetails {
         FormDetails {
             id: self.id,
             title: self.title,
@@ -84,7 +88,7 @@ impl Form {
             edition: self.edition,
             created_at: self.created_at,
             questions,
-            last_answer
+            last_answer,
         }
     }
 }

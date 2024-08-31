@@ -1,6 +1,7 @@
 use forms_models::answer::{
     Answer, AnswerCreate, AnswerCreateReq, AnswerJs, AnswerRead, AnswerUpdate,
 };
+use forms_models::session::SessionUpdate;
 use worker::{Request, Response, Result};
 
 use forms_models::shared::{D1EntityCreate, D1EntityRead, D1EntityUpdate};
@@ -93,7 +94,7 @@ pub async fn post(req: Request, ctx: RouterContext) -> WorkerHttpResponse {
             .first_into::<AnswerJs, Answer>()
             .await?;
 
-        if let Some(answer) = answer {
+        let answer_id = if let Some(answer) = answer {
             let AnswerCreateReq { data } = get_body(&mut req).await?;
 
             let body = AnswerUpdate {
@@ -102,11 +103,28 @@ pub async fn post(req: Request, ctx: RouterContext) -> WorkerHttpResponse {
             };
 
             D1EntityUpdate::update_query(body, &db).run().await?;
+
+            answer.id
         } else {
             let body = AnswerCreate::from_req(&mut req, &ctx, session.id).await?;
 
-            D1EntityCreate::create_query(body, &db).run().await?;
-        }
+            let a = D1EntityCreate::create_query(body, &db)
+                .all::<AnswerJs>()
+                .await?;
+
+            a.first().unwrap().id
+        };
+
+        D1EntityUpdate::update_query(
+            SessionUpdate {
+                id: session.id,
+                last_answer: Some(answer_id),
+                ..Default::default()
+            },
+            &db,
+        )
+        .run()
+        .await?;
 
         FormsResponse::ok("OK")
     })
