@@ -17,8 +17,6 @@ jobs:
       runs-on: ubuntu-latest
       name: Checks
       command: "--all --check"
-      fmt-version: stable
-      checkout-version: v4
 
   check-clippy:
     needs: [check-fmt]
