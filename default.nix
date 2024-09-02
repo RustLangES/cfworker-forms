@@ -78,6 +78,8 @@ inputs @ {
     nativeBuildInputs
     ++ buildInputs
     ++ (with pkgs; [
+      toolchain
+
       cargo-make
       taplo
 
