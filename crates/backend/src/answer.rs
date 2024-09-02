@@ -115,7 +115,7 @@ pub async fn post(req: Request, ctx: RouterContext) -> WorkerHttpResponse {
                 .find(|(_, step)| **step == answer.id)
             {
                 // If is already answered, cut vector
-                session_steps.truncate(idx);
+                session_steps.truncate(idx + 1);
             } else {
                 // If is new answer, just append it
                 session_steps.push(answer.id);
@@ -153,7 +153,7 @@ pub async fn post(req: Request, ctx: RouterContext) -> WorkerHttpResponse {
         .run()
         .await?;
 
-        FormsResponse::ok("OK")
+        FormsResponse::ok(answer_id.to_string())
     })
     .await
 }

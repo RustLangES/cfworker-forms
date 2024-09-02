@@ -92,19 +92,35 @@ pub struct SessionDelete {
     pub token: String,
 }
 
+// A Hacky D1 thing ;)
+// When load data from d1 database there're a ser/de between JS -> WASM -> Rust.
+// In the sql schema we define `steps` as string, but when we load a "string"
+// with only a number in it's content, then it's parsed as number instead of
+// leave its original types haha. To prevent this, we put a ':' in the beginning.
+
 fn parse_steps(steps: String) -> Vec<usize> {
     steps
-        .split_terminator(";")
-        .map(|step| step.parse::<usize>().unwrap())
-        .collect()
+        // A Hacky D1 thing ;)
+        // - Explained above
+        .starts_with(':')
+        .then(|| {
+            steps[1..]
+                .split_terminator(";")
+                .map(|step| step.parse::<usize>().unwrap())
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 fn serialize_steps(steps: Vec<usize>) -> String {
-    steps
-        .iter()
-        .map(ToString::to_string)
-        .collect::<Vec<_>>()
-        .join(";")
+    // A Hacky D1 thing ;)
+    // - Explained above
+    ":".to_owned()
+        + &steps
+            .iter()
+            .map(ToString::to_string)
+            .collect::<Vec<_>>()
+            .join(";")
 }
 
 impl From<SessionJs> for Session {
