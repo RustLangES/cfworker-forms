@@ -49,6 +49,7 @@ pub struct FormDetails {
 
     pub questions: Vec<QuestionDetails>,
     pub last_answer: Option<usize>,
+    pub session_steps: Option<Vec<usize>>,
 }
 
 #[derive(Deserialize)]
@@ -78,6 +79,7 @@ impl Form {
         self,
         questions: Vec<QuestionDetails>,
         last_answer: Option<usize>,
+        session_steps: Option<Vec<usize>>,
     ) -> FormDetails {
         FormDetails {
             id: self.id,
@@ -87,8 +89,10 @@ impl Form {
             multiple_times: self.multiple_times,
             edition: self.edition,
             created_at: self.created_at,
+
             questions,
             last_answer,
+            session_steps,
         }
     }
 }

@@ -1,4 +1,4 @@
-use forms_models::session::SessionJs;
+use forms_models::session::{Session, SessionJs};
 use worker::{Request, Response, Result};
 
 use forms_models::{
@@ -59,17 +59,18 @@ pub async fn get(req: Request, ctx: RouterContext) -> WorkerHttpResponse {
             })
         };
 
-        let last_answer = if let Some(body) = body {
+        let (last_answer, session_steps) = if let Some(body) = body {
             D1EntityRead::read_query(body, &db)
-                .first::<SessionJs>()
+                .first_into::<SessionJs, Session>()
                 .await?
-                .and_then(|session| session.last_answer)
+                .map(|session| (session.last_answer, session.steps))
+                .unzip()
         } else {
-            None
+            (None, None)
         };
 
         let questions = questions.into_iter().map(Question::into_details).collect();
-        let form = form.into_details(questions, last_answer);
+        let form = form.into_details(questions, last_answer.flatten(), session_steps);
 
         FormsResponse::json(
             200,
