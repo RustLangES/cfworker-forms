@@ -20,9 +20,10 @@
       system: let
         bundle = import ./. rec {
           inherit system flake-utils;
+
           pkgs = nixpkgs.legacyPackages.${system};
-          crane = inputs.crane.lib;
-          fenix = inputs.fenix.packages;
+          crane = inputs.crane.mkLib pkgs;
+          fenix = inputs.fenix.packages.${system};
         };
       in {
         inherit (bundle) packages apps devShells;

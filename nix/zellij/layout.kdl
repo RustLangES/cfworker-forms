@@ -1,0 +1,50 @@
+layout {
+  pane_template name="my-pane" {
+    split_direction "vertical"
+    borderless true
+  }
+
+  tab name="EDITOR" focus=true {
+    my-pane edit=""
+
+    pane size=1 borderless=true {
+      plugin location="zellij:status-bar"
+    }
+  }
+
+  tab name="FRONT" cwd="./frontend" {
+    pane size=1 borderless=true {
+      plugin location="zellij:compact-bar"
+    }
+
+    my-pane
+
+    pane size=1 borderless=true {
+      plugin location="zellij:status-bar"
+    }
+  }
+
+  tab name="BACK" cwd="./crates/backend" {
+    pane size=1 borderless=true {
+      plugin location="zellij:compact-bar"
+    }
+
+    my-pane
+
+    pane size=1 borderless=true {
+      plugin location="zellij:status-bar"
+    }
+  }
+
+  tab name="TERM" {
+    pane size=1 borderless=true {
+      plugin location="zellij:compact-bar"
+    }
+
+    my-pane
+
+    pane size=1 borderless=true {
+      plugin location="zellij:status-bar"
+    }
+  }
+}
