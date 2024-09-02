@@ -13,12 +13,23 @@
   export let answers: Answer[];
   export let API_HOST: string;
 
-  const clamp = (value: number, min: number, max: number) => Math.max(Math.min(value, max), min);
+  let session_steps = form.session_steps ?? [];
 
-  const actual_step_idx = answers.findLastIndex(answer => answer.data.trim().length);
-  let actual_step: number = clamp(actual_step_idx, 0, form.questions.length - 1);
+  let actual_step: number = get_step_from_answer(session_steps[session_steps.length - 1]) ?? 0;
 
   $: ended = actual_step >= form.questions.length;
+
+  function get_step_from_answer(answerId: number): number | null {
+    const answer = answers.find(answer => answer.id == answerId);
+
+    if (!answer) return null;
+
+    const questionIdx = form.questions.findIndex(question => question.id == answer.question_id);
+
+    if (questionIdx === -1) return null;
+
+    return questionIdx;
+  }
 
   function get_answer(questionId: number) {
     let old_answer = answers.findIndex(answer => answer.question_id === questionId);
@@ -30,7 +41,7 @@
     return "";
   }
 
-  async function answer(ev: CustomEvent<[questionId: number, answer: string]>) {
+  async function post_answer(ev: CustomEvent<[questionId: number, answer: string]>) {
     const questionId = ev.detail[0];
     const answer = ev.detail[1];
 
@@ -48,10 +59,13 @@
       return false;
     }
 
-    const answerIdx = answers.findIndex(answer => answer.question_id === questionId);
+    const answerId = await res.json();
+
+    const answerIdx = answers.findIndex(answer => answer.id === answerId);
 
     if (answerIdx === -1) {
       answers.push({
+        id: answerId,
         question_id: questionId,
         data: answer
       });
@@ -62,8 +76,12 @@
     return true; 
   }
 
-  async function next() {
-    actual_step++;
+  async function next(ev: CustomEvent<number | null>) {
+    if (ev.detail == null) {
+      actual_step++;
+    } else {
+      actual_step = ev.detail;
+    }
 
     if (actual_step >= form.questions.length) {
       // Delete session when ends form
@@ -73,6 +91,19 @@
           "Authorization": `Bearer ${user}`
         }
       });
+    } else {
+      const questionId = form.questions[actual_step]?.id;
+      if (questionId == null) return console.warn(`Cannot find ${actual_step} question`);
+
+      const answer = answers.find(answer => answer.question_id === questionId);
+      if (answer == null) return;
+
+      const step = session_steps.findIndex(answerId => answerId === answer.id);
+
+      if (step === -1) {
+        session_steps.push(answer.id);
+        await post_answer({ detail: [questionId, answer.data] });
+      }
     }
   }
 
@@ -94,8 +125,10 @@
   canPrev={step_idx !== 0}
   canNext={step_idx !== form.questions.length - 1}
 
-  on:prev={() => actual_step--}
-  on:answer={answer}
+  on:prev={() => {
+    actual_step = get_step_from_answer(session_steps[actual_step - 1]) ?? 0
+  }}
+  on:answer={post_answer}
   on:next={next} />
 {:else}
   Empty Form :)
