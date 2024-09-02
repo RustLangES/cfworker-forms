@@ -12,7 +12,7 @@ on:
 
 jobs:
   check-fmt:
-    uses: RustLangES/.github/workflows/templates/format.yml@main
+    uses: RustLangES/.github/.github/workflows/templates/format.yml@main
     with:
       runs-on: ubuntu-latest
       name: Checks
