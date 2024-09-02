@@ -286,32 +286,41 @@ macro_rules! new_query {
     (!;) => ((vec![], vec![]));
 
     (!; $($tail:tt)+) => {{
-        let mut out_query = vec![];
-        let mut out_args = vec![];
+        #[allow(clippy::vec_init_then_push)]
+        {
+            let mut out_query = vec![];
+            let mut out_args = vec![];
 
-        $crate::macros::new_query!(!set out_query, out_args; $($tail)*);
+            $crate::macros::new_query!(!set out_query, out_args; $($tail)*);
 
-        (out_query, out_args)
+            (out_query, out_args)
+        }
     }};
 
     (!query = $out_query:ident;) => (vec![]);
 
     (!query = $out_query:ident; $($tail:tt)+) => {{
-        let mut out_args = vec![];
+        #[allow(clippy::vec_init_then_push)]
+        {
+            let mut out_args = vec![];
 
-        $crate::macros::new_query!(!set $out_query, out_args; $($tail)+);
+            $crate::macros::new_query!(!set $out_query, out_args; $($tail)+);
 
-        out_args
+            out_args
+        }
     }};
 
     (!args = $out_args:ident;) => (vec![]);
 
     (!args = $out_args:ident; $($tail:tt)+) => {{
-        let mut out_query = vec![];
+        #[allow(clippy::vec_init_then_push)]
+        {
+            let mut out_query = vec![];
 
-        $crate::macros::new_query!(!set out_query, $out_args; $($tail)+);
+            $crate::macros::new_query!(!set out_query, $out_args; $($tail)+);
 
-        out_query
+            out_query
+        }
     }};
 
     (!set $out_query:ident, $out_args:ident;) => {};

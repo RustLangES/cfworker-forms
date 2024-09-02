@@ -12,9 +12,7 @@ pub trait D1Action {
     where
         T: for<'a> serde::Deserialize<'a>;
 
-    fn first_into<T, B: TryFrom<T>>(
-        self,
-    ) -> impl Future<Output = Result<Option<B>, worker::Response>>
+    fn first_into<T, B>(self) -> impl Future<Output = Result<Option<B>, worker::Response>>
     where
         T: for<'a> serde::Deserialize<'a>,
         B: TryFrom<T>,
@@ -24,7 +22,7 @@ pub trait D1Action {
     where
         T: for<'a> serde::Deserialize<'a>;
 
-    fn all_into<T, B: TryFrom<T>>(self) -> impl Future<Output = Result<Vec<B>, worker::Response>>
+    fn all_into<T, B>(self) -> impl Future<Output = Result<Vec<B>, worker::Response>>
     where
         T: for<'a> serde::Deserialize<'a>,
         B: TryFrom<T>,
@@ -83,7 +81,7 @@ impl D1Action for Result<worker::D1PreparedStatement, String> {
             .map(B::try_from)
             .map(|m| m.inspect_err(|err| worker::console_error!("Cannot parse: {err}")));
 
-        Ok(res.map_or(None, |m| m.map_or(None, Option::Some)))
+        Ok(res.and_then(|m| m.ok()))
     }
 
     async fn all<T>(self) -> Result<Vec<T>, worker::Response>

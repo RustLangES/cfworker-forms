@@ -54,8 +54,7 @@ where
 
             let redirect_to = state
                 .filter(|state| state.starts_with("url%"))
-                .map(|state| Some((state[6..].find("%")? + 7, state)))
-                .flatten()
+                .and_then(|state| Some((state[6..].find("%")? + 7, state)))
                 .map(|(start, state)| state[start..].to_string());
 
             let (ctx, token) = get_token(ctx, code).await;

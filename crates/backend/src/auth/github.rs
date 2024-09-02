@@ -31,9 +31,7 @@ pub fn client_id(ctx: &RouterContext) -> ClientId {
     ClientId::new(
         ctx.env
             .secret(ENV_CLIENT_ID)
-            .expect(&format!(
-                "Missing the {ENV_CLIENT_ID} environment variable."
-            ))
+            .unwrap_or_else(|_| panic!("Missing the {ENV_CLIENT_ID} environment variable."))
             .to_string(),
     )
 }
@@ -42,9 +40,7 @@ pub fn client_secret(ctx: &RouterContext) -> ClientSecret {
     ClientSecret::new(
         ctx.env
             .secret(ENV_CLIENT_SECRET)
-            .expect(&format!(
-                "Missing the {ENV_CLIENT_SECRET} environment variable."
-            ))
+            .unwrap_or_else(|_| panic!("Missing the {ENV_CLIENT_SECRET} environment variable."))
             .to_string(),
     )
 }
@@ -86,7 +82,7 @@ fn authorize_url(redirect_to: Option<String>) -> oauth2::CsrfToken {
 }
 
 pub fn get_authorize(ctx: &RouterContext, redirect_to: Option<String>) -> worker::Url {
-    let (authorize_url, _) = client(&ctx)
+    let (authorize_url, _) = client(ctx)
         .authorize_url(|| authorize_url(redirect_to))
         .add_scope(Scope::new("user:email".to_string()))
         .url();
@@ -105,7 +101,7 @@ pub async fn get_token(
         .exchange_code(AuthorizationCode::new(code))
         .request_async(&http_client)
         .await
-        .map_err(|err| FormsResponse::text(500, err.to_string()).map_or_else(|a| a, |b| b));
+        .map_err(|err| FormsResponse::text(500, err.to_string()).unwrap_or_else(|a| a));
 
     (ctx, token)
 }
@@ -115,7 +111,7 @@ pub async fn callback(
     req: oauth2::HttpRequest,
 ) -> Result<oauth2::HttpResponse, worker::Error> {
     let client_id = client_id(ctx);
-    let client_secret = client_secret(&ctx);
+    let client_secret = client_secret(ctx);
 
     let urlencoded_id: String = form_urlencoded::byte_serialize(client_id.as_bytes()).collect();
     let urlencoded_secret: String =
@@ -133,7 +129,7 @@ pub async fn callback(
 
     let req = Request::new_with_init(
         URL_TOKEN,
-        &RequestInit::new()
+        RequestInit::new()
             .with_method(Method::Post)
             .with_headers(headers)
             .with_body(Some(body.into())),
@@ -155,7 +151,7 @@ async fn res_worker_to_oauth2(res: worker::HttpResponse) -> oauth2::HttpResponse
     let mut out_buffer = vec![];
 
     while let Ok(Some(buffer)) = stream.read().await {
-        let buffer: worker::js_sys::Uint8Array = buffer.try_into().unwrap();
+        let buffer: worker::js_sys::Uint8Array = buffer.into();
         let mut buffer = buffer.to_vec();
         out_buffer.append(&mut buffer);
     }

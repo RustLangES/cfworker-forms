@@ -51,22 +51,19 @@ pub async fn get(req: Request, ctx: RouterContext) -> WorkerHttpResponse {
                 complete: true,
                 ..Default::default()
             })
-        } else if let Some(device_id) = get_device_id_hash(&req) {
-            Some(forms_models::session::SessionRead {
+        } else {
+            get_device_id_hash(&req).map(|device_id| forms_models::session::SessionRead {
                 device_id: Some(device_id),
                 form_id: Some(form_id),
                 ..Default::default()
             })
-        } else {
-            None
         };
 
         let last_answer = if let Some(body) = body {
             D1EntityRead::read_query(body, &db)
                 .first::<SessionJs>()
                 .await?
-                .map(|session| session.last_answer)
-                .flatten()
+                .and_then(|session| session.last_answer)
         } else {
             None
         };

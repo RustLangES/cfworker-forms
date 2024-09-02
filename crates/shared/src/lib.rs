@@ -10,10 +10,6 @@ pub const CONTENT_TYPE: &str = "content-type";
 pub struct FormsResponse;
 
 impl FormsResponse {
-    pub fn new() -> ResponseBuilder {
-        ResponseBuilder::new()
-    }
-
     /// Returns error if any name is invalid (eg. contains space)
     pub fn headers(headers: &[(&str, &str)]) -> Result<worker::Headers, worker::Error> {
         let mut h = worker::Headers::new();
@@ -28,14 +24,14 @@ impl FormsResponse {
 
     /// Returns error if any name is invalid (eg. contains space)
     pub fn with_headers(headers: &[(&str, &str)]) -> Result<ResponseBuilder, Response> {
-        let mut b = ResponseBuilder::new();
+        let mut b = Response::builder();
 
         for header in headers {
             b = b
                 .with_header(header.0, header.1)
                 .inspect_err(|err| worker::console_error!("Setting header: {err}"))
                 .map_err(|_| {
-                    ResponseBuilder::new()
+                    Response::builder()
                         .with_status(500)
                         .fixed(b"Internal Server Error".to_vec())
                 })?;

@@ -21,10 +21,10 @@ pub async fn needs_admin(
     ctx: &RouterContext,
     form_id: Option<usize>,
 ) -> Result<SessionComplete, worker::Response> {
-    let session = needs_auth_complete(req, &db, form_id).await?;
+    let session = needs_auth_complete(req, db, form_id).await?;
 
     let is_admin = if let Some(external_email) = &session.external_email {
-        get_admins(&ctx)?.contains(external_email)
+        get_admins(ctx)?.contains(external_email)
     } else {
         false
     };
