@@ -14,6 +14,7 @@ pub struct SessionJs {
     pub token: Option<String>,
 
     pub last_answer: Option<usize>,
+    pub steps: String,
 
     pub created_at: i64,
 }
@@ -25,6 +26,7 @@ pub struct SessionCompleteJs {
     pub device_id: String,
     pub created_at: i64,
     pub last_answer: Option<usize>,
+    pub steps: String,
 
     pub external_id: Option<usize>,
     pub external_kind: Option<String>,
@@ -39,6 +41,7 @@ pub struct Session {
     pub external_id: Option<usize>,
     pub token: Option<String>,
     pub last_answer: Option<usize>,
+    pub steps: Vec<usize>,
 
     pub created_at: time::OffsetDateTime,
 }
@@ -49,6 +52,7 @@ pub struct SessionComplete {
     pub form_id: usize,
     pub created_at: time::OffsetDateTime,
     pub last_answer: Option<usize>,
+    pub steps: Vec<usize>,
 
     pub external_id: Option<usize>,
     pub external_kind: Option<String>,
@@ -80,11 +84,27 @@ pub struct SessionUpdate {
     pub last_answer: Option<usize>,
     pub external_id: Option<usize>,
     pub token: Option<String>,
+    pub steps: Option<Vec<usize>>,
 }
 
 #[derive(Deserialize)]
 pub struct SessionDelete {
     pub token: String,
+}
+
+fn parse_steps(steps: String) -> Vec<usize> {
+    steps
+        .split(";")
+        .map(|step| step.parse::<usize>().unwrap())
+        .collect()
+}
+
+fn serialize_steps(steps: Vec<usize>) -> String {
+    steps
+        .iter()
+        .map(ToString::to_string)
+        .collect::<Vec<_>>()
+        .join(";")
 }
 
 impl From<SessionJs> for Session {
@@ -95,6 +115,7 @@ impl From<SessionJs> for Session {
             last_answer,
             form_id,
             external_id,
+            steps,
             token,
             created_at,
         }: SessionJs,
@@ -105,6 +126,7 @@ impl From<SessionJs> for Session {
             last_answer,
             form_id,
             external_id,
+            steps: parse_steps(steps),
             token,
             created_at: time::OffsetDateTime::from_unix_timestamp(created_at).unwrap(),
         }
@@ -119,6 +141,7 @@ impl From<SessionCompleteJs> for SessionComplete {
             form_id,
             created_at,
             last_answer,
+            steps,
 
             external_id,
             external_email,
@@ -130,6 +153,7 @@ impl From<SessionCompleteJs> for SessionComplete {
             form_id,
             created_at: time::OffsetDateTime::from_unix_timestamp(created_at).unwrap(),
             last_answer,
+            steps: parse_steps(steps),
             external_id,
             external_kind,
             external_email,
@@ -138,7 +162,7 @@ impl From<SessionCompleteJs> for SessionComplete {
 }
 
 create_queries! {
-    Session where select_all = [ id, form_id, external_id, device_id, last_answer, ],
+    Session where select_all = [ id, form_id, external_id, device_id, last_answer, steps ],
     SessionRead where select = |session, db| {
         let mut queries = vec!["deleted = ?"];
         let mut args = vec![false.into()];
@@ -228,10 +252,21 @@ create_queries! {
             .bind(&args)
             .map_err(|err| format!("{err}"))
     },
-    SessionCreate where create = with session; [ session.form_id, session.device_id, session?.external_id, session.token, ],
+    SessionCreate where create = with session; [
+        session.device_id,
+        session?.external_id,
+        session.form_id,
+        steps = "",
+        session.token,
+    ],
     SessionUpdate where update = with session; {
         where = [ session.id; ];
-        set = [ session?.external_id; session?.token; session?.last_answer; ];
+        set = [
+            session?.external_id;
+            session?.last_answer;
+            steps ?= session.steps.map(serialize_steps);
+            session?.token;
+        ];
     },
     SessionDelete where delete = |session, db| {
         db
