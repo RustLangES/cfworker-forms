@@ -94,7 +94,7 @@ pub struct SessionDelete {
 
 fn parse_steps(steps: String) -> Vec<usize> {
     steps
-        .split(";")
+        .split_terminator(";")
         .map(|step| step.parse::<usize>().unwrap())
         .collect()
 }
