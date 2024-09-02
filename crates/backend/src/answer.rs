@@ -94,6 +94,8 @@ pub async fn post(req: Request, ctx: RouterContext) -> WorkerHttpResponse {
             .first_into::<AnswerJs, Answer>()
             .await?;
 
+        let steps;
+
         let answer_id = if let Some(answer) = answer {
             let AnswerCreateReq { data } = get_body(&mut req).await?;
 
@@ -104,21 +106,46 @@ pub async fn post(req: Request, ctx: RouterContext) -> WorkerHttpResponse {
 
             D1EntityUpdate::update_query(body, &db).run().await?;
 
+            let mut session_steps = session.steps.clone();
+
+            if let Some((idx, _)) = session
+                .steps
+                .iter()
+                .enumerate()
+                .find(|(_, step)| **step == answer.id)
+            {
+                // If is already answered, cut vector
+                session_steps.truncate(idx);
+            } else {
+                // If is new answer, just append it
+                session_steps.push(answer.id);
+            }
+
+            steps = Some(session_steps);
+
             answer.id
         } else {
             let body = AnswerCreate::from_req(&mut req, &ctx, session.id).await?;
 
-            let a = D1EntityCreate::create_query(body, &db)
+            let new_answer = D1EntityCreate::create_query(body, &db)
                 .all::<AnswerJs>()
                 .await?;
 
-            a.first().unwrap().id
+            let new_answer_id = new_answer.first().unwrap().id;
+
+            // If is new answer, just append it
+            let mut session_steps = session.steps.clone();
+            session_steps.push(new_answer_id);
+            steps = Some(session_steps);
+
+            new_answer_id
         };
 
         D1EntityUpdate::update_query(
             SessionUpdate {
                 id: session.id,
                 last_answer: Some(answer_id),
+                steps,
                 ..Default::default()
             },
             &db,
