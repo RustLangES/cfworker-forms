@@ -12,14 +12,13 @@ on:
 
 jobs:
   check-fmt:
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - name: checks
-        run: |
-          cargo fmt --all --check
+    uses: RustLangES/.github/workflows/templates/format.yml@main
+    with:
+      runs-on: ubuntu-latest
+      name: Checks
+      command: "--all --check"
+      fmt-version: stable
+      checkout-version: v4
 
   check-clippy:
     needs: [check-fmt]
