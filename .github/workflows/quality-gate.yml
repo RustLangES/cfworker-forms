@@ -1,0 +1,21 @@
+name: Quality Gate
+on:
+  workflow_dispatch:
+  workflow_call:
+  pull_request:
+  push:
+    branches:
+      - main
+      - dev
+    paths:
+      - "src/**/**.rs"
+      - "crates/**/**.rs"
+
+jobs:
+  quality-gate:
+    uses: RustLangES/.github/.github/workflows/quality-gate.yml@main
+    with:
+      runs-on: ubuntu-latest
+      checks-command: "--all --check" ## cargo fmt --all --check
+      clippy-command: "-- -D warnings" ## cargo clippy -- -D warnings
+      tests-command: "test" ## cargo test
