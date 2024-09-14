@@ -7,6 +7,7 @@ use crate::question::QuestionDetails;
 pub struct FormJs {
     pub id: usize,
     pub title: String,
+    pub description: String,
     pub require_login: u8,
     pub deleted: u8,
     pub edition: String,
@@ -20,6 +21,7 @@ pub struct Form {
     pub id: usize,
 
     pub title: String,
+    pub description: String,
     pub edition: String,
     pub multiple_times: bool,
     pub require_login: bool,
@@ -41,6 +43,7 @@ pub struct FormDetails {
     pub title: String,
     pub require_login: bool,
     pub deleted: bool,
+    pub description: String,
     pub edition: String,
     pub multiple_times: bool,
 
@@ -56,6 +59,7 @@ pub struct FormDetails {
 pub struct FormCreate {
     pub title: String,
     pub require_login: bool,
+    pub description: String,
     pub edition: String,
     pub multiple_times: bool,
 }
@@ -65,6 +69,7 @@ pub struct FormUpdate {
     pub id: usize,
     pub title: Option<String>,
     pub require_login: Option<bool>,
+    pub description: Option<String>,
     pub edition: Option<String>,
     pub multiple_times: Option<bool>,
 }
@@ -87,6 +92,7 @@ impl Form {
             require_login: self.require_login,
             deleted: self.deleted,
             multiple_times: self.multiple_times,
+            description: self.description,
             edition: self.edition,
             created_at: self.created_at,
 
@@ -104,6 +110,7 @@ impl From<FormJs> for Form {
             title,
             require_login,
             deleted,
+            description,
             edition,
             created_at,
             multiple_times,
@@ -114,6 +121,7 @@ impl From<FormJs> for Form {
             title,
             require_login: require_login == 1,
             deleted: deleted == 1,
+            description,
             edition,
             multiple_times: multiple_times == 1,
             created_at: time::OffsetDateTime::from_unix_timestamp(created_at).unwrap(),
@@ -122,14 +130,15 @@ impl From<FormJs> for Form {
 }
 
 create_queries! {
-    Form where select_all = [ id, title, require_login, deleted, created_at, edition, multiple_times ],
+    Form where select_all = [ id, title, require_login, deleted, created_at, description, edition, multiple_times ],
     FormRead where select = with form; [ form.id; ],
-    FormCreate where create = with form; [ form.title, form.require_login, form.edition, form.multiple_times, ],
+    FormCreate where create = with form; [ form.title, form.require_login, form.description, form.edition, form.multiple_times, ],
     FormUpdate where update = with form; {
         where = [ form.id; ];
         set = [
             &form?.title;
             form?.require_login;
+            &form?.description;
             &form?.edition;
             form?.multiple_times;
         ];

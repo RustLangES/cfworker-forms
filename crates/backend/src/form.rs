@@ -8,9 +8,7 @@ use forms_models::{
     D1EntityQueries,
 };
 use forms_shared::db::D1Action;
-use forms_shared::{
-    get_auth, get_body, string_into_response, FormsResponse, IntoResponse, WorkerHttpResponse,
-};
+use forms_shared::{get_auth, get_body, FormsResponse, WorkerHttpResponse};
 
 use crate::admins::needs_admin;
 use crate::session::get_device_id_hash;
@@ -92,18 +90,18 @@ pub async fn post(req: Request, ctx: RouterContext) -> WorkerHttpResponse {
 
         let body = get_body::<FormCreate>(&mut req).await?;
 
-        let Some(new_form) = D1EntityCreate::create_query(body, &db)
+        let new_form = D1EntityCreate::create_query(body, &db)
             .all::<FormJs>()
-            .await?
-            .first() else {
-            FormsResponse::json(
-                201,
+            .await?;
+
+        let Some(new_form) = new_form.first() else {
+            return FormsResponse::json(
+                500,
                 &serde_json::json!({
-                    "errors": [],
-                    "success": true,
-                    "data": new_form_id
+                    "errors": ["Can't create form"],
+                    "success": false,
                 }),
-            )
+            );
         };
 
         let new_form_id = new_form.id;
