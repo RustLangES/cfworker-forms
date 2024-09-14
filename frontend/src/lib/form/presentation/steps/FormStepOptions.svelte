@@ -1,10 +1,20 @@
 <script lang="ts">
 	import type { FormStepOptions } from "../../models/Step.d";
 
-  export let step: FormStepOptions;
   export let answer: string;
+  export let customNext: number | null;
+  export let step: FormStepOptions;
 
   export let sendAnswer: () => void;
+
+  if (step.data.jumps) {
+    const idx = step.data.options.findIndex(option => option === answer);
+    
+    const jumpQuestion = step.data.jumps[idx];
+    if (jumpQuestion != null) {
+      customNext = jumpQuestion;
+    }
+  }
 </script>
 
 <ul>
@@ -16,7 +26,14 @@
         type="radio"
         bind:group={answer}
         value={option}
-        on:change={sendAnswer} />
+        on:change={() => {
+          const jumpQuestion = step.data.jumps[idx] ?? 3;
+          if (jumpQuestion != null) {
+            customNext = jumpQuestion;
+          }
+
+          sendAnswer();
+        }} />
 
       <label for={`q-${step.id}-op-${idx}`}>
         <span />

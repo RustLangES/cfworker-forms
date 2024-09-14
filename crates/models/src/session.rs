@@ -180,12 +180,14 @@ impl From<SessionCompleteJs> for SessionComplete {
 create_queries! {
     Session where select_all = [ id, form_id, external_id, device_id, last_answer, steps ],
     SessionRead where select = |session, db| {
-        let mut queries = vec!["deleted = ?"];
+        let mut queries = vec![];
         let mut args = vec![false.into()];
         let mut or_queries = None;
         let mut or_args = vec![];
 
         let query = if session.complete {
+            queries.push("Session.deleted = ?");
+
             if let Some(token) = session.token {
                 queries.push("Session.token = ?");
                 args.push(token.into());
@@ -212,12 +214,14 @@ create_queries! {
             }
 
             "SELECT \
-                Session.id, Session.form_id, Session.external_id, Session.created_at, \
+                Session.id, Session.form_id, Session.device_id, Session.external_id, Session.created_at, Session.last_answer, Session.steps, \
                 External.kind AS external_kind, External.email AS external_email \
              FROM Session \
              LEFT JOIN External ON Session.external_id = External.id
              WHERE "
         } else {
+            queries.push("deleted = ?");
+
             if let Some(token) = session.token {
                 queries.push("token = ?");
                 args.push(token.into());

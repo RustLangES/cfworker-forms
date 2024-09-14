@@ -19,7 +19,7 @@
 
 	const dispatch = createEventDispatcher<{
     prev: null;
-    next: null;
+    next: number | null;
     answer: [questionId: number, answer: string];
 	}>();
 
@@ -53,6 +53,8 @@
       if (answer) dispatch("answer", [step.id, answer]);
 		}, 550);
   }
+
+  let customNext: number | null = null;
 </script>
 
 {#if active}
@@ -69,7 +71,7 @@
     {:else if step.type === "questionText"}
       <FormStepQuestionText {step} bind:answer {sendAnswer} />
     {:else if step.type === "options" && !step.data.canMultiple}
-      <FormStepOptions {step} bind:answer {sendAnswer} />
+      <FormStepOptions {step} bind:answer {sendAnswer} bind:customNext />
     {:else if step.type === "options" && step.data.canMultiple}
       <FormStepOptionsMultiple {step} bind:answer {sendAnswer} />
     {:else}
@@ -80,7 +82,7 @@
       <button disabled={!canPrev} on:click={() => canPrev && dispatch("prev")}>
         Anterior
       </button>
-      <button {disabled} on:click={() => !disabled && dispatch("next")}>
+      <button {disabled} on:click={() => !disabled && dispatch("next", customNext)}>
         {#if canNext}
           Siguiente
         {:else}
