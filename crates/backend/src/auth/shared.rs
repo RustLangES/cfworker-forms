@@ -32,6 +32,8 @@ where
         let route = route.clone();
 
         async move {
+            worker::console_log!("Someone is trying to login");
+
             let query_pairs = req.url().unwrap();
             let query_pairs = query_pairs.query_pairs();
 

@@ -110,9 +110,11 @@ pub async fn callback(
     ctx: &RouterContext,
     req: oauth2::HttpRequest,
 ) -> Result<oauth2::HttpResponse, worker::Error> {
+    worker::console_log!("[GITHUB] ClientId and ClientSecret obtain");
     let client_id = client_id(ctx);
     let client_secret = client_secret(ctx);
 
+    worker::console_log!("[GITHUB] Getting token");
     let urlencoded_id: String = form_urlencoded::byte_serialize(client_id.as_bytes()).collect();
     let urlencoded_secret: String =
         form_urlencoded::byte_serialize(client_secret.secret().as_bytes()).collect();
@@ -136,8 +138,10 @@ pub async fn callback(
     )
     .unwrap();
 
+    worker::console_log!("[GITHUB] Getting access token");
     let res = worker::Fetch::Request(req).send().await?;
 
+    worker::console_log!("[GITHUB] Parse response");
     let res = worker::response_from_wasm(res.into())?;
 
     Result::<oauth2::HttpResponse, worker::Error>::Ok(res_worker_to_oauth2(res).await)
@@ -195,12 +199,15 @@ pub async fn get_user(token: GithubToken) -> Result<GithubUser, worker::Response
     )
     .map_err(IntoResponse::into_response)?;
 
+    worker::console_log!("[GITHUB] Getting user data");
     let mut res = worker::Fetch::Request(req)
         .send()
         .await
         .map_err(IntoResponse::into_response)?;
 
     let res = res.text().await.map_err(IntoResponse::into_response)?;
+
+    worker::console_log!("[REMOVE] Test response: {res}"); // XXX: Remove this
     let user = serde_json::from_str::<GithubUser>(&res).map_err(IntoResponse::into_response)?;
 
     Ok(user)

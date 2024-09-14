@@ -4,7 +4,7 @@ import type { ApiResponse } from "$lib/models/api";
 import { error, redirect } from "@sveltejs/kit";
 
 export async function load(
-  { url, params, platform, cookies }: App.LoadServerEvent<{ slug: string }>,
+  { url, params, platform, cookies, request }: App.LoadServerEvent<{ slug: string }>,
 ) {
   if (url.searchParams.has("code")) {
     const code = url.searchParams.get("code")!;
@@ -20,9 +20,11 @@ export async function load(
   console.log(`Loading form ${params.slug} from: ${FORM_URL}`);
   const form_res = await fetch(FORM_URL);
   const form = await form_res.json() as ApiResponse<Form>;
+  console.log("Form loaded:", form);
 
   if (form.success) {
     const code = cookies.get("external-code");
+    console.log("User has code: ", !!code)
 
     if (form.data.require_login && !code) {
       return {
@@ -31,15 +33,20 @@ export async function load(
       };
     }
 
+    console.log(`Loading session from: ${FORM_URL}/session`);
     const session_res = await fetch(`${FORM_URL}/session`, {
       headers: code
         ? {
           "Authorization": `Bearer ${code}`,
+          "user-agent": request.headers.get("user-agent"),
         }
-        : {},
+        : {
+          "user-agent": request.headers.get("user-agent"),
+        },
     });
 
     const session = await session_res.json() as ApiResponse<string>;
+    console.log("Session loaded:", session);
 
     if (session.success) {
       const user = session.data!;
@@ -65,10 +72,10 @@ export async function load(
         user,
         answers: [],
       };
-    }
-
-    if (session_res.status === 403) {
+    } else if (session_res.status === 403) {
       return error(session_res.status, "Already answered");
+    } else if (!session.success) {
+      return error(session_res.status, session.errors[0]);
     }
 
     return {

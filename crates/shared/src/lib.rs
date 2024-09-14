@@ -98,13 +98,30 @@ impl IntoResponse for serde_json::Error {
     fn into_response(self) -> worker::Response {
         worker::console_error!("{self}");
 
-        // TODO: Manage errors with more detail
+        let errors = match self.classify() {
+            serde_json::error::Category::Io => {
+                format!("{:?}, {:?}", "Cannot read IO", self.to_string())
+            }
+            serde_json::error::Category::Syntax => format!(
+                "{:?}, {:?}",
+                "Cannot deserialize: Syntax error",
+                self.to_string()
+            ),
+            serde_json::error::Category::Data => format!(
+                "{:?}, {:?}",
+                "Cannot deserialize: Invalid data",
+                self.to_string()
+            ),
+            serde_json::error::Category::Eof => {
+                format!("{:?}", "Cannot deserialize: End of file. Corrupted data")
+            }
+        };
 
         ResponseBuilder::new()
             .with_status(400)
             .with_header(CONTENT_TYPE, "application/json; charset=utf-8")
             .unwrap()
-            .fixed(format!(r#"{{"errors":[{:?}],"success":false}}"#, self.to_string()).into_bytes())
+            .fixed(format!(r#"{{"errors":[{errors}],"success":false}}"#).into_bytes())
     }
 }
 
