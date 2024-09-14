@@ -175,8 +175,8 @@ async fn res_worker_to_oauth2(res: worker::HttpResponse) -> oauth2::HttpResponse
 pub struct GithubUser {
     pub id: u64,
     // pub avatar_url: String,
-    // pub name: String,
-    pub email: String,
+    pub name: String,
+    pub email: Option<String>,
 }
 
 /// https://docs.github.com/en/rest/users/emails?apiVersion=2022-11-28#list-email-addresses-for-the-authenticated-user
@@ -207,7 +207,6 @@ pub async fn get_user(token: GithubToken) -> Result<GithubUser, worker::Response
 
     let res = res.text().await.map_err(IntoResponse::into_response)?;
 
-    worker::console_log!("[REMOVE] Test response: {res}"); // XXX: Remove this
     let user = serde_json::from_str::<GithubUser>(&res).map_err(IntoResponse::into_response)?;
 
     Ok(user)
