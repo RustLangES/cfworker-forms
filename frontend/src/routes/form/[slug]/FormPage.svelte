@@ -8,10 +8,12 @@
 	import TopTitle from "$lib/presentation/TopTitle.svelte";
 	import ButtonLink from '$lib/presentation/ButtonLink.svelte';
 
-  export let form: Form;
-  export let user: string | null;
-  export let answers: Answer[];
   export let API_HOST: string;
+
+  export let answers: Answer[];
+  export let form: Form;
+  export let playing: boolean;
+  export let user: string | null;
 
   let session_steps = form.session_steps ?? [];
 
@@ -79,6 +81,11 @@
   async function next(ev: CustomEvent<number | null>) {
     if (ev.detail == null) {
       actual_step++;
+
+      if (session_steps[actual_step] != null) {
+        // TODO: WOOOOOOOOS, IDK what I have to do. Please, if you find 
+        // any bug related to this, report it to me @Brayan-724 (ApikaLuca)
+      }
     } else {
       actual_step = ev.detail;
     }
@@ -139,7 +146,7 @@
 
   <h2>Finalizaste el Formulario</h2>
 
-  <ButtonLink href="/"> Ir al inicio </ButtonLink>
+  <ButtonLink on:click={() => playing = false} href="/"> Ir al inicio </ButtonLink>
 {/if}
 
 <style>

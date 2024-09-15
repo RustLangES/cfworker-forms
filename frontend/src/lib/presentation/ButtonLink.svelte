@@ -2,7 +2,7 @@
   export let href: string;
 </script>
 
-<a {href}>
+<a {href} on:click>
   <slot />
 </a>
 
@@ -13,9 +13,10 @@
 
     text-decoration: none;
     color: white;
-    background: transparent;
+    background: #2f2f2f;
     border: solid 1.5px #FFF;
     font-size: 1rem;
+    font-family: var(--fonts-body);
 
     filter: var(--dec-shadow-filter);
     transition: filter 500ms ease;

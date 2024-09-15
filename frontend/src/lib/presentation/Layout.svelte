@@ -16,6 +16,7 @@
   :global(body) {
     height: 100vh;
     overflow-y: hidden;
+    font-family: var(--fonts-body);
   }
 
   main {

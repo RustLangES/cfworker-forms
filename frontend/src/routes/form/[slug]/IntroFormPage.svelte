@@ -1,23 +1,16 @@
 <script lang="ts">
 	import type { Form } from "$lib/form/models/Form";
 
+	import Button from "$lib/presentation/Button.svelte";
 	import ButtonLink from "$lib/presentation/ButtonLink.svelte";
 	import Header from "$lib/presentation/Header.svelte";
 
+  export let playing: boolean;
   export let form: Form;
 </script>
 
 <Header {form} />
 
-<h3>This form require external login.</h3>
-
-<ButtonLink href={`/login?form=${form.id}`}> GITHUB </ButtonLink>
+<Button on:click={() => playing = true}> Start </Button>
 
 <ButtonLink href="/"> Go Back </ButtonLink>
-
-<style>
-  :global(body) {
-    display: grid;
-    place-items: center;
-  }
-</style>
