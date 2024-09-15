@@ -7,7 +7,7 @@
 
   export let sendAnswer: () => void;
 
-  if (step.data.jumps) {
+  if (typeof (step?.data?.jumps) === "object") {
     const idx = step.data.options.findIndex(option => option === answer);
     
     const jumpQuestion = step.data.jumps[idx];
@@ -27,7 +27,7 @@
         bind:group={answer}
         value={option}
         on:change={() => {
-          const jumpQuestion = step.data.jumps[idx] ?? 3;
+          const jumpQuestion = step.data?.jumps?.[idx];
           if (jumpQuestion != null) {
             customNext = jumpQuestion;
           }
