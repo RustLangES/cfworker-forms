@@ -74,6 +74,10 @@ export async function load(
       };
     } else if (session_res.status === 403) {
       return error(session_res.status, "Already answered");
+    } else if (session_res.status === 401) {
+      // External Code is expired
+      cookies.delete("external-code", { path: "/" });
+      return redirect(301, `/form/${params.slug}`);
     } else if (!session.success) {
       return error(session_res.status, session.errors[0]);
     }
