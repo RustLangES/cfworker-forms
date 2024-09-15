@@ -42,6 +42,7 @@
   }
 
   .description {
+    max-width: min(95%,750px);
     margin-top: 2rem;
   }
 </style>
