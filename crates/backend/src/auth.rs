@@ -46,6 +46,7 @@ pub async fn github_callback(req: worker::Request, ctx: RouterContext) -> Worker
             let GithubUser {
                 id: user_id,
                 email: user_email,
+                login: user_login,
                 name: user_name,
                 ..
             } = github::get_user(token).await?;
@@ -64,7 +65,7 @@ pub async fn github_callback(req: worker::Request, ctx: RouterContext) -> Worker
                 D1EntityUpdate::update_query(
                     ExternalUpdate {
                         id: external_user.id,
-                        email: Some(user_email.unwrap_or(user_name)),
+                        email: Some(user_email.or(user_name).unwrap_or(user_login)),
                         token: Some(external_token.clone()),
                     },
                     &db,
@@ -76,7 +77,7 @@ pub async fn github_callback(req: worker::Request, ctx: RouterContext) -> Worker
                     ExternalCreate {
                         kind: "Github".to_owned(),
                         external_id: user_id.to_string(),
-                        email: user_email.unwrap_or(user_name),
+                        email: user_email.or(user_name).unwrap_or(user_login),
                         token: external_token.clone(),
                     },
                     &db,

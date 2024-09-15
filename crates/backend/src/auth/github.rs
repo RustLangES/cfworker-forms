@@ -175,7 +175,8 @@ async fn res_worker_to_oauth2(res: worker::HttpResponse) -> oauth2::HttpResponse
 pub struct GithubUser {
     pub id: u64,
     // pub avatar_url: String,
-    pub name: String,
+    pub login: String,
+    pub name: Option<String>,
     pub email: Option<String>,
 }
 
