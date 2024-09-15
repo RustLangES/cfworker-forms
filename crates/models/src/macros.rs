@@ -242,7 +242,7 @@ macro_rules! create_query {
         out_args.push((::time::OffsetDateTime::now_utc().unix_timestamp() as f64).into());
 
         (
-            format!(concat!("INSERT INTO ", $table, " ({}) VALUES ({})"), out_columns.join(", "), out_values.join(", ")),
+            format!(concat!("INSERT INTO ", $table, " ({}) VALUES ({}) RETURNING *"), out_columns.join(", "), out_values.join(", ")),
             out_args,
         )
     }};
