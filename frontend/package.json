@@ -31,6 +31,7 @@
 	},
 	"type": "module",
 	"dependencies": {
+		"nanoid": "^5.0.7",
 		"svelte-canvas-confetti": "^0.6.0"
 	}
 }

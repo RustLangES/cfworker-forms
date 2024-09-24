@@ -2,6 +2,7 @@ import type { Answer } from "$lib/form/models/Answer.d";
 import type { Form } from "$lib/form/models/Form";
 import type { ApiResponse } from "$lib/models/api";
 import { error, redirect } from "@sveltejs/kit";
+import { nanoid } from "nanoid";
 
 export async function load(
   { url, params, platform, cookies, request }: App.LoadServerEvent<{ slug: string }>,
@@ -13,6 +14,14 @@ export async function load(
 
     // Remove code from url to prevent leaks if anyone is streaming haha
     return redirect(301, `/form/${params.slug}`);
+  }
+
+  let device_id = cookies.get("device-id");
+
+  if (!device_id) {
+    device_id = nanoid();
+
+    cookies.set("device-id", device_id, { path: "/" });
   }
 
   const FORM_URL = `${platform!.env.API_HOST}/api/form/${params.slug}`;
@@ -39,9 +48,11 @@ export async function load(
         ? {
           "Authorization": `Bearer ${code}`,
           "user-agent": request.headers.get("user-agent"),
+          "X-device-id": device_id,
         }
         : {
           "user-agent": request.headers.get("user-agent"),
+          "X-device-id": device_id,
         },
     });
 

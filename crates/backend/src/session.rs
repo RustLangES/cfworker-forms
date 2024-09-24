@@ -15,25 +15,10 @@ use crate::shared::{error_wrapper, needs_auth};
 use crate::RouterContext;
 
 pub fn get_device_id(req: &worker::Request) -> Option<String> {
-    let site_id = req
-        .headers()
-        .get("cf-connecting-ip")
-        .ok()
-        .flatten()
-        .or_else(|| req.headers().get("x-forwarded-for").ok().flatten())
-        .or_else(|| req.cf().and_then(|cf| cf.city()))
-        .inspect(|x| worker::console_log!("DeviceID-SiteID: {x:?}"))?;
-
-    let user_agent = req
-        .headers()
-        .get("user-agent")
-        .ok()
-        .flatten()
-        .inspect(|x| worker::console_log!("DeviceID-UserAgent: {x:?}"))?;
-
-    worker::console_log!("DeviceID: {site_id} + {user_agent}");
-
-    Some(site_id + &user_agent)
+    req.headers()
+        .get("X-device-id")
+        .inspect_err(|err| worker::console_error!("DeviceId Error: {err}"))
+        .ok()?
 }
 
 pub fn get_device_id_hash(req: &worker::Request) -> Option<String> {
