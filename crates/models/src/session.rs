@@ -1,8 +1,22 @@
 use std::ops::Not;
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::{create_queries, new_query};
+
+#[derive(Deserialize)]
+pub struct SessionCompleteJs {
+    pub id: usize,
+    pub form_id: usize,
+    pub device_id: String,
+    pub created_at: i64,
+    pub last_answer: Option<usize>,
+    pub steps: String,
+
+    pub external_id: Option<usize>,
+    pub external_kind: Option<String>,
+    pub external_email: Option<String>,
+}
 
 #[derive(Deserialize, Debug)]
 pub struct SessionJs {
@@ -19,30 +33,20 @@ pub struct SessionJs {
     pub created_at: i64,
 }
 
-#[derive(Deserialize)]
-pub struct SessionCompleteJs {
-    pub id: usize,
-    pub form_id: usize,
-    pub device_id: String,
-    pub created_at: i64,
-    pub last_answer: Option<usize>,
-    pub steps: String,
-
-    pub external_id: Option<usize>,
-    pub external_kind: Option<String>,
-    pub external_email: Option<String>,
-}
-
 #[derive(Debug, Serialize)]
 pub struct Session {
     pub id: usize,
-    pub form_id: usize,
+
     pub device_id: String,
     pub external_id: Option<usize>,
-    pub token: Option<String>,
+    pub form_id: usize,
     pub last_answer: Option<usize>,
+    pub token: Option<String>,
+
+    #[serde(deserialize_with = "steps_deserialize")]
     pub steps: Vec<usize>,
 
+    #[serde(deserialize_with = "crate::date_deserialize")]
     pub created_at: time::OffsetDateTime,
 }
 
@@ -98,20 +102,6 @@ pub struct SessionDelete {
 // with only a number in it's content, then it's parsed as number instead of
 // leave its original types haha. To prevent this, we put a ':' in the beginning.
 
-fn parse_steps(steps: String) -> Vec<usize> {
-    steps
-        // A Hacky D1 thing ;)
-        // - Explained above
-        .starts_with(':')
-        .then(|| {
-            steps[1..]
-                .split_terminator(";")
-                .map(|step| step.parse::<usize>().unwrap())
-                .collect()
-        })
-        .unwrap_or_default()
-}
-
 fn serialize_steps(steps: Vec<usize>) -> String {
     // A Hacky D1 thing ;)
     // - Explained above
@@ -123,30 +113,22 @@ fn serialize_steps(steps: Vec<usize>) -> String {
             .join(";")
 }
 
-impl From<SessionJs> for Session {
-    fn from(
-        SessionJs {
-            id,
-            device_id,
-            last_answer,
-            form_id,
-            external_id,
-            steps,
-            token,
-            created_at,
-        }: SessionJs,
-    ) -> Self {
-        Self {
-            id,
-            device_id,
-            last_answer,
-            form_id,
-            external_id,
-            steps: parse_steps(steps),
-            token,
-            created_at: time::OffsetDateTime::from_unix_timestamp(created_at).unwrap(),
-        }
-    }
+fn steps_deserialize<'de, D>(deserializer: D) -> Result<Vec<usize>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let data = String::deserialize(deserializer)?;
+    Ok(data
+        // A Hacky D1 thing ;)
+        // - Explained above
+        .starts_with(':')
+        .then(|| {
+            data[1..]
+                .split_terminator(";")
+                .map(|step| step.parse::<usize>().unwrap())
+                .collect()
+        })
+        .unwrap_or_default())
 }
 
 impl From<SessionCompleteJs> for SessionComplete {
