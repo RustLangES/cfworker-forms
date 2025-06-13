@@ -9,58 +9,92 @@ on:
       - ".github/workflows/deploy.yml"
       - "wrangler.toml"
       - "frontend/**"
-      - "crates/backend/**"
+      - "crates/**"
       - "Cargo.toml"
       - "Cargo.lock"
       - "rust-toolchain.toml"
 
 jobs:
-  check:
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - name: checks
-        run: |
-          cargo fmt --all --check
+  quality-gate:
+    uses: ./.github/workflows/quality-gate.yml
+    with:
+      checks-command: "--all --check"
+      clippy-command: "-- -D warnings"
+      tests-command: "test"
 
   deploy:
-    needs: [check]
-    runs-on: ubuntu-22.04
-    strategy:
-      matrix:
-        path:
-          - crates/backend
-          - frontend
+    needs: [quality-gate]
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+
       - uses: pnpm/action-setup@v4
-        if: ${{ matrix.path == 'frontend' }}
         with:
           version: 9
-      - name: Install worker-build
+
+      - name: Deploy
+        uses: cloudflare/wrangler-action@v3
+        env:
+          API_HOST: ${{ secrets.API_HOST }}
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: "frontend"
+          wranglerVersion: "4.19.1"
+          secrets: |
+            API_HOST
+
+  deploy-backend:
+    needs: [quality-gate]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install nix
+        uses: nixbuild/nix-quick-install-action@v30
+        with:
+          nix_conf: |
+            keep-env-derivations = true
+            keep-outputs = true
+
+      - name: Restore and save Nix store
+        uses: nix-community/cache-nix-action@v6
+        with:
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix', 'flake.lock') }}
+          restore-prefixes-first-match: build-${{ runner.os }}-
+
+      - name: Build nix
+        working-directory: crates/backend
+        run: nix build ../..#backend
+
+      - name: Fix up wrangler toml
+        working-directory: crates/backend
         run: |
-          cargo install worker-build
+          echo "---- Before"
+          cat wrangler.toml
+          
+          cat wrangler.toml | sed 's/main = "build/main = "result/' | sed 's/command = "worker-build --release"/command = "echo dummy build"/' >| wrangler.prod.toml
+          
+          echo "---- After"
+          cat wrangler.prod.toml
+
       - name: Deploy
         uses: cloudflare/wrangler-action@v3
         env:
           GH_CLIENT_ID: ${{ secrets.GH_APP_CLIENT_ID }}
           GH_CLIENT_SECRET: ${{ secrets.GH_APP_CLIENT_SECRET }}
           ADMINS: ${{ secrets.ADMINS }}
-          API_HOST: ${{ secrets.API_HOST }}
           HOST: ${{ secrets.API_HOST }}
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: "${{ matrix.path }}"
-          wranglerVersion: "3.67.0"
+          command: deploy -c wrangler.prod.toml
+          workingDirectory: "crates/backend"
+          wranglerVersion: "4.19.1"
           secrets: |
             GH_CLIENT_ID
             GH_CLIENT_SECRET
             ADMINS
-            API_HOST
             HOST

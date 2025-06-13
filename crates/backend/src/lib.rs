@@ -13,7 +13,7 @@ pub type RouterContext = worker::RouteContext<()>;
 #[event(start)]
 fn start() {
     #[cfg(target_arch = "wasm32")]
-    std::panic::set_hook(Box::new(|info: &std::panic::PanicInfo| {
+    std::panic::set_hook(Box::new(|info: &std::panic::PanicHookInfo| {
         worker::console_error!("{info}")
     }));
 }

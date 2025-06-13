@@ -1,22 +1,22 @@
-inputs @ {
+{
   pkgs,
   lib ? pkgs.lib,
   stdenv ? pkgs.stdenv,
   crane,
   fenix,
-  flake-utils,
+  wrangler-fix,
   ...
 }: let
   # fenix: rustup replacement for reproducible builds
   toolchain = fenix.fromToolchainFile {
     file = ./rust-toolchain.toml;
-    sha256 = "sha256-3jVIIf5XPnUU1CRaTyAiO0XHVbJl12MSx3eucTXCjtE=";
+    sha256 = "sha256-KUm16pHj+cRedf8vxs/Hd2YWxpOrWZ7UOrwhILdSJBU=";
   };
+
   # crane: cargo and artifacts manager
   craneLib = crane.overrideToolchain toolchain;
 
   nativeBuildInputs = with pkgs; [
-    esbuild
     worker-build
     wasm-pack
     wasm-bindgen-cli
@@ -27,6 +27,7 @@ inputs @ {
     [
       openssl
       pkg-config
+      autoPatchelfHook
     ]
     ++ lib.optionals stdenv.buildPlatform.isDarwin [
       pkgs.libiconv
@@ -37,11 +38,9 @@ inputs @ {
       src = craneLib.cleanCargoSource path;
     };
 
-  commonArgs = {
-    inherit buildInputs nativeBuildInputs;
-
+  worker = craneLib.buildPackage {
     pname = "worker";
-    strictDeps = true;
+    inherit (cargoToml ./crates/backend) version;
     doCheck = false;
 
     src = lib.fileset.toSource {
@@ -54,69 +53,43 @@ inputs @ {
         ./crates/shared
       ];
     };
+    buildPhaseCargoCommand = ''
+      cd crates/backend
+      HOME=$(mktemp -d fake-homeXXXX) worker-build --release --mode no-install
+      cd ../..
+    '';
+
+    # Custom build command is provided, so this should be enabled
+    doNotPostBuildInstallCargoBinaries = true;
+
+    installPhaseCommand = ''
+      cp -r ./crates/backend/build/ $out
+    '';
+
+    nativeBuildInputs = with pkgs; [esbuild] ++ nativeBuildInputs;
+
+    inherit buildInputs;
   };
-
-  cargoArtifacts = craneLib.buildDepsOnly commonArgs;
-
-  worker = craneLib.buildPackage (commonArgs
-    // {
-      inherit cargoArtifacts;
-
-      pname = "worker";
-      inherit (cargoToml ./crates/backend) version;
-
-      buildPhaseCargoCommand = ''
-        cd crates/backend
-
-        HOME=$(mktemp -d fake-homeXXXX)
-        worker-build --release --mode no-install
-      '';
-      installPhaseCommand = "cp -r build $out";
-    });
-
-  devShellBuildInputs =
-    nativeBuildInputs
-    ++ buildInputs
-    ++ (with pkgs; [
-      toolchain
-
-      cargo-make
-      taplo
-
-      # deno
-      nodejs
-      nodePackages.pnpm
-      # nodePackages.prettier
-      # nodePackages.typescript-language-server
-      # nodePackages.svelte-language-server
-      (import ./nix/wrangler.nix inputs)
-    ]);
 in {
-  # `nix run .#zellij`
-  apps.zellij = flake-utils.lib.mkApp {
-    drv = pkgs.writeShellApplication {
-      name = "run-zellij";
-
-      runtimeInputs = with pkgs;
-        devShellBuildInputs
-        ++ [
-          zellij
-        ];
-
-      text = ''
-        zellij --layout ${./nix/zellij/layout.kdl}
-      '';
-    };
-  };
-
-  # `nix build`
-  packages.default = worker;
+  # `nix build .#backend`
+  packages.backend = worker;
 
   # `nix develop`
   devShells = {
     default = craneLib.devShell {
       buildInputs =
-        devShellBuildInputs;
+        nativeBuildInputs
+        ++ buildInputs
+        ++ (with pkgs; [
+          toolchain
+
+          cargo-make
+          taplo
+
+          nodejs
+          nodePackages.pnpm
+          wrangler-fix.wrangler
+        ]);
     };
   };
 }

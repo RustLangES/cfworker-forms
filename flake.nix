@@ -1,32 +1,41 @@
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    fenix.url = "github:nix-community/fenix";
+    crane.url = "github:ipetkov/crane";
     flake-utils.url = "github:numtide/flake-utils";
-    crane = {
-      url = "github:ipetkov/crane";
+    fenix = {
+      url = "github:nix-community/fenix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    wrangler = {
+      # Use 4.19.1
+      url = "github:ryand56/wrangler/1141a859c59e05ceb901d14790f0f75a6c5de3f5";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
   outputs = {
-    self,
     nixpkgs,
     flake-utils,
     ...
   } @ inputs:
-  # Iterate over Arm, x86 for MacOs 🍎 and Linux 🐧
+    {
+      nix.settings = {
+        substituters = ["https://wrangler.cachix.org"];
+        trusted-public-keys = ["wrangler.cachix.org-1:N/FIcG2qBQcolSpklb2IMDbsfjZKWg+ctxx0mSMXdSs="];
+      };
+    }
+    //
+    # Iterate over Arm, x86 for MacOs 🍎 and Linux 🐧
     flake-utils.lib.eachSystem (flake-utils.lib.defaultSystems) (
-      system: let
-        bundle = import ./. rec {
+      system:
+        import ./. rec {
           inherit system flake-utils;
 
           pkgs = nixpkgs.legacyPackages.${system};
           crane = inputs.crane.mkLib pkgs;
           fenix = inputs.fenix.packages.${system};
-        };
-      in {
-        inherit (bundle) packages apps devShells;
-      }
+          wrangler-fix = inputs.wrangler.packages.${system};
+        }
     );
 }

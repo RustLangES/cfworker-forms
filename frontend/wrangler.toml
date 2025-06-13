@@ -2,7 +2,7 @@ name = "forms-page"
 workers_dev = true
 main = "./dist/cloudflare/worker.js"
 site.bucket = "./dist/cloudflare/public"
-compatibility_date = "2024-03-14"
+compatibility_date = "2025-06-10"
 
 [build]
 command = "pnpm run build"

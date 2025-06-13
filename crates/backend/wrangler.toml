@@ -1,10 +1,16 @@
 name = "forms-api"
 workers_dev = true
 main = "build/worker/shim.mjs"
-compatibility_date = "2024-03-14"
+compatibility_date = "2025-06-10"
 
 [build]
 command = "worker-build --release"
+
+[placement]
+mode = "smart"
+
+[observability]
+enabled = true
 
 [[rules]]
 globs = ["**/*.wasm"]
